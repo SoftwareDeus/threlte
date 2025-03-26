@@ -46,16 +46,12 @@ function validatePawnMove(
 
 	// 3. Diagonales Schlagen (nur bei gegnerischer Figur)
 	const targetPiece = getPieceAtPosition(targetX, targetY, pieces);
-	if (
-		Math.abs(targetX - currentX) === 1 &&
+	return !!(Math.abs(targetX - currentX) === 1 &&
 		targetY === currentY + direction &&
 		targetPiece &&
-		targetPiece.color !== piece.color
-	) {
-		return true;
-	}
+		targetPiece.color !== piece.color);
 
-	return false;
+
 }
 
 function validateKnightMove(

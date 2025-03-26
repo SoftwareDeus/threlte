@@ -23,9 +23,11 @@ export function moveTo(
 	targetX: number,
 	targetY: number,
 	pieces: ChessPieceData[],
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	gameState: any,
 	activePlayer: string,
 	event: MouseEvent
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): { updatedState: any; resetSelection: boolean } {
 	event.stopPropagation();
 
@@ -35,6 +37,7 @@ export function moveTo(
 	}
 
 	if (validateMove(selectedPiece, [targetX, targetY], pieces)) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		gameState.update((state: any) => {
 			const pieceIndex = state.pieces.findIndex(
 				(p: ChessPieceData) =>
