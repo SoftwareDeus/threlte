@@ -16,6 +16,7 @@ export enum ChessPieceType {
 
 // Typdefinition für die Daten einer Schachfigur
 export type ChessPieceData = {
+	id: string; // Einzigartige ID für die Figur
 	type: ChessPieceType; // Figurtyp
 	position: [number, number, number]; // Position: [X, Y, Z]
 	color: ChessColor; // Farbe: Weiß oder Schwarz

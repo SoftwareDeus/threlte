@@ -1,8 +1,8 @@
-﻿import type { ChessPieceData } from "../types";
-import { ChessColor, ChessPieceType } from "../types";
+﻿import { type ChessPieceData, ChessPieceType } from '../types';
+import { ChessColor } from "../types";
 
 // Hilfsfunktion: Finde eine Figur an einer bestimmten Position
-function getPieceAtPosition(
+export function getPieceAtPosition(
 	x: number,
 	y: number,
 	pieces: ChessPieceData[]
@@ -14,7 +14,7 @@ function getPieceAtPosition(
 	);
 }
 
-// Validierungslogik für spezifische Figuren
+// Validierungslogik für Bauernzüge
 function validatePawnMove(
 	piece: ChessPieceData,
 	[targetX, targetY]: [number, number],
@@ -44,16 +44,15 @@ function validatePawnMove(
 		return true;
 	}
 
-	// 3. Diagonales Schlagen (nur bei gegnerischer Figur)
+	// 3. Diagonales Schlagen (wenn ein Gegner da ist)
 	const targetPiece = getPieceAtPosition(targetX, targetY, pieces);
 	return !!(Math.abs(targetX - currentX) === 1 &&
 		targetY === currentY + direction &&
 		targetPiece &&
 		targetPiece.color !== piece.color);
-
-
 }
 
+// Validierungslogik für Springerzüge
 function validateKnightMove(
 	piece: ChessPieceData,
 	[targetX, targetY]: [number, number]
@@ -74,6 +73,7 @@ function validateKnightMove(
 	return possibleMoves.some(([x, y]) => x === targetX && y === targetY);
 }
 
+// Validierungslogik für Turmzüge
 function validateRookMove(
 	piece: ChessPieceData,
 	[targetX, targetY]: [number, number],
@@ -104,6 +104,7 @@ function validateRookMove(
 	return !targetPiece || targetPiece.color !== piece.color;
 }
 
+// Validierungslogik für Läuferzüge
 function validateBishopMove(
 	piece: ChessPieceData,
 	[targetX, targetY]: [number, number],
@@ -134,6 +135,7 @@ function validateBishopMove(
 	return !targetPiece || targetPiece.color !== piece.color;
 }
 
+// Validierungslogik für Königinzüge
 function validateQueenMove(
 	piece: ChessPieceData,
 	[targetX, targetY]: [number, number],
@@ -145,6 +147,7 @@ function validateQueenMove(
 	);
 }
 
+// Validierungslogik für Königszüge
 function validateKingMove(
 	piece: ChessPieceData,
 	[targetX, targetY]: [number, number]
@@ -156,57 +159,53 @@ function validateKingMove(
 		[currentX, currentY + 1],
 		[currentX, currentY - 1],
 		[currentX + 1, currentY + 1],
-		[currentX - 1, currentY + 1],
-		[currentX + 1, currentY - 1],
 		[currentX - 1, currentY - 1],
+		[currentX + 1, currentY - 1],
+		[currentX - 1, currentY + 1],
 	];
 
 	return possibleMoves.some(([x, y]) => x === targetX && y === targetY);
 }
 
-// Hauptfunktion: Validierung eines Zuges basierend auf dem Figurtyp
+// **Hauptfunktion: Validiert einen bestimmten Zug**
 export function validateMove(
 	piece: ChessPieceData,
-	target: [number, number],
+	[targetX, targetY]: [number, number],
 	pieces: ChessPieceData[]
 ): boolean {
 	switch (piece.type) {
 		case ChessPieceType.Pawn:
-			return validatePawnMove(piece, target, pieces);
+			return validatePawnMove(piece, [targetX, targetY], pieces);
 		case ChessPieceType.Knight:
-			return validateKnightMove(piece, target);
+			return validateKnightMove(piece, [targetX, targetY]);
 		case ChessPieceType.Rook:
-			return validateRookMove(piece, target, pieces);
+			return validateRookMove(piece, [targetX, targetY], pieces);
 		case ChessPieceType.Bishop:
-			return validateBishopMove(piece, target, pieces);
+			return validateBishopMove(piece, [targetX, targetY], pieces);
 		case ChessPieceType.Queen:
-			return validateQueenMove(piece, target, pieces);
+			return validateQueenMove(piece, [targetX, targetY], pieces);
 		case ChessPieceType.King:
-			return validateKingMove(piece, target);
+			return validateKingMove(piece, [targetX, targetY]);
 		default:
 			return false;
 	}
 }
 
-// Funktion: Alle gültigen Züge einer Figur berechnen
+// **Hauptfunktion: Gibt alle gültigen Züge für eine Figur zurück**
 export function getValidMoves(
 	piece: ChessPieceData,
 	pieces: ChessPieceData[]
 ): [number, number][] {
-	const validMoves: [number, number][] = [];
+	const possibleMoves: [number, number][] = [];
 
-	// Das Brett hat standardmäßig die Dimensionen 8x8
-	const boardSize = 8;
-
-	// Überprüfe alle potenziellen Zielkoordinaten auf dem Brett
-	for (let x = 0; x < boardSize; x++) {
-		for (let y = 0; y < boardSize; y++) {
-			// Wenn der Zug gültig ist, füge die Koordinaten den möglichen Zügen hinzu
+	// Das Spielfeld durchgehen
+	for (let x = 0; x < 8; x++) {
+		for (let y = 0; y < 8; y++) {
 			if (validateMove(piece, [x, y], pieces)) {
-				validMoves.push([x, y]);
+				possibleMoves.push([x, y]);
 			}
 		}
 	}
 
-	return validMoves;
+	return possibleMoves;
 }

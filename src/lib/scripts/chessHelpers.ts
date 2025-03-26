@@ -1,91 +1,88 @@
 ﻿import type { ChessPieceData } from "../types";
-import { getValidMoves, validateMove } from "./moveValidation";
+import { ChessColor } from "../types";
+import { validateMove, getValidMoves } from "./moveValidation"; // Importiere die neuen Funktionen
+import { gameState } from "./gameState";
 
-export function selectPiece(
-	piece: ChessPieceData,
-	activePlayer: string,
-	pieces: ChessPieceData[],
-	event: MouseEvent
-): { selected: ChessPieceData | null; moves: [number, number][] } {
-	event.stopPropagation();
-
-	if (piece.color === activePlayer) {
-		const validMoves = getValidMoves(piece, pieces);
-		return { selected: piece, moves: validMoves };
-	} else {
-		console.warn("Das ist nicht dein Zug!", { piece, activePlayer });
-		return { selected: null, moves: [] };
-	}
+// Suche eine Figur an einer bestimmten Position
+export function getPieceAtPosition(
+	x: number,
+	y: number,
+	pieces: ChessPieceData[]
+): ChessPieceData | null {
+	return (
+		pieces.find(
+			(piece) => piece.position[0] === x && piece.position[1] === y
+		) || null
+	);
 }
 
+// Wähle eine Spielfigur aus und berechne ihre möglichen Züge
+export function selectPiece(
+	selectedPiece: ChessPieceData | null,
+	activePlayer: ChessColor,
+	pieces: ChessPieceData[],
+): { selected: ChessPieceData | null; moves: [number, number][] } {
+	// Wenn keine Figur gewählt wurde, Beenden
+	if (!selectedPiece) return { selected: null, moves: [] };
+
+	// Wenn die Figur nicht die des aktiven Spielers ist, beenden
+	if (selectedPiece.color !== activePlayer) return { selected: null, moves: [] };
+
+	// Finde alle gültigen Züge für die ausgewählte Figur
+	const validMoves = getValidMoves(selectedPiece, pieces);
+
+	return {
+		selected: selectedPiece,
+		moves: validMoves
+	};
+}
+
+// Bewegungslogik für eine Figur
 export function moveTo(
 	selectedPiece: ChessPieceData | null,
 	targetX: number,
 	targetY: number,
 	pieces: ChessPieceData[],
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	gameState: any,
-	activePlayer: string,
-	event: MouseEvent
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): { updatedState: any; resetSelection: boolean } {
-	event.stopPropagation();
+	store: typeof gameState,
+	activePlayer: ChessColor,
+): { resetSelection: boolean } {
+	// Wenn keine Figur ausgewählt ist, beenden
+	if (!selectedPiece) return { resetSelection: false };
 
-	if (!selectedPiece) {
-		console.warn("Keine Figur ausgewählt!");
-		return { updatedState: null, resetSelection: false };
-	}
+	// Validieren, ob der Zug gültig ist
+	const isValid = validateMove(selectedPiece, [targetX, targetY], pieces);
+	if (!isValid) return { resetSelection: false };
 
-	if (validateMove(selectedPiece, [targetX, targetY], pieces)) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		gameState.update((state: any) => {
-			const pieceIndex = state.pieces.findIndex(
-				(p: ChessPieceData) =>
-					p.position[0] === selectedPiece.position[0] &&
-					p.position[1] === selectedPiece.position[1]
-			);
+	const updatedPieces = pieces.map((piece) => {
+		// Wenn die ausgewählte Figur gefunden wurde, aktualisiere ihre Position
+		if (piece.id === selectedPiece.id) {
+			return {
+				...piece,
+				position: [targetX, targetY, piece.position[2]]
+			};
+		}
+		// Entferne geschlagene Figuren an der Zielposition
+		if (
+			piece.position[0] === targetX &&
+			piece.position[1] === targetY &&
+			piece.color !== selectedPiece.color
+		) {
+			return null;
+		}
 
-			if (pieceIndex === -1) {
-				console.error("Fehler: Figur nicht gefunden.");
-				return state;
-			}
+		return piece;
+	}).filter((piece): piece is ChessPieceData => piece !== null);
 
-			const targetPieceIndex = state.pieces.findIndex(
-				(p: ChessPieceData) => p.position[0] === targetX && p.position[1] === targetY
-			);
+	// Aktualisiere den Spielstatus im Store
+	store.set({
+		pieces: updatedPieces,
+		activePlayer: activePlayer === ChessColor.White ? ChessColor.Black : ChessColor.White,
+		capturedPieces: {
+			white: updatedPieces.filter((piece) => piece.color === ChessColor.Black),
+			black: updatedPieces.filter((piece) => piece.color === ChessColor.White)
+		}
+	});
 
-			// Kollisions- oder Angriffslogik
-			if (
-				targetPieceIndex > -1 &&
-				selectedPiece.color === state.pieces[targetPieceIndex].color
-			) {
-				console.warn("Ungültiger Zug: Figur deiner Farbe blockiert.");
-				return state;
-			}
-
-			if (
-				targetPieceIndex > -1 &&
-				state.pieces[targetPieceIndex].color !== selectedPiece.color
-			) {
-				const capturedPiece = state.pieces[targetPieceIndex];
-				if (selectedPiece.color === "white") {
-					state.capturedPieces.white.push(capturedPiece);
-				} else {
-					state.capturedPieces.black.push(capturedPiece);
-				}
-				state.pieces.splice(targetPieceIndex, 1); // Gegner entfernen
-			}
-
-			// Bewegung durchführen
-			state.pieces[pieceIndex].position = [targetX, targetY, 0];
-
-			// Spieler wechseln
-			state.activePlayer = activePlayer === "white" ? "black" : "white";
-			return state;
-		});
-		return { updatedState: gameState, resetSelection: true };
-	} else {
-		console.warn("Ungültiger Zug!", { selectedPiece, target: [targetX, targetY] });
-		return { updatedState: null, resetSelection: false };
-	}
+	// Auswahl zurücksetzen
+	return { resetSelection: true };
 }

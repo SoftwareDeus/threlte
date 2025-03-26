@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { T } from '@threlte/core'
+	import { T } from '@threlte/core' 
 	import { Color } from 'three'
 	import { interactivity } from '@threlte/extras'
 	import SceneCamera from './SceneCamera.svelte'

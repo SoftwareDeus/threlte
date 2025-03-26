@@ -23,22 +23,21 @@
 	});
 
 	// Spielfigur auswählen
-	function handleSelect(piece: ChessPieceData, event: MouseEvent) {
-		const { selected, moves } = selectPiece(piece, activePlayer, pieces, event);
+	function handleSelect(piece: ChessPieceData) {
+		const { selected, moves } = selectPiece(piece, activePlayer, pieces);
 		selectedPiece = selected;
 		validMoves = moves;
 	}
 
 	// Spielfigur bewegen
-	function handleMove(targetX: number, targetY: number, event: MouseEvent) {
+	function handleMove(targetX: number, targetY: number) {
 		const { resetSelection } = moveTo(
 			selectedPiece,
 			targetX,
 			targetY,
 			pieces,
 			gameState,
-			activePlayer,
-			event
+			activePlayer
 		);
 
 		// Auswahl zurücksetzen, wenn der Zug abgeschlossen ist
@@ -58,17 +57,17 @@
 				y={row}
 				tileSize={tileSize}
 				isValidMove={validMoves.some(([x, y]) => x === col && y === row)}
-				onTileClick={(x, y, event) => handleMove(x, y, event)}
+				onTileClick={(x, y) => handleMove(x, y)}
 			/>
 		{/each}
 	{/each}
 
 	<!-- Figuren-Rendering -->
-	{#each pieces as piece (`${piece.color}_${piece.type}_${piece.position.join('_')}`)}
+	{#each pieces as piece (piece.id)}
 		<ChessPiece
 			onclickDelegate={(event: MouseEvent) => {
 				event.stopPropagation();
-				handleSelect(piece, event);
+				handleSelect(piece);
 			}}
 			type={piece.type}
 			position={[
@@ -77,7 +76,7 @@
 				piece.position[1] * tileSize - (depth * tileSize) / 2 + tileSize / 2,
 			]}
 			color={piece.color}
-			isSelected={selectedPiece === piece}
+			isSelected={selectedPiece?.id === piece.id}
 		/>
 	{/each}
 </T.Group>
