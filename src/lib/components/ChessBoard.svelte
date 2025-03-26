@@ -9,6 +9,7 @@
 
 	let selectedPiece: ChessPieceData | null = null;
 	let validMoves: [number, number][] = [];
+	let threatFields: [number, number][] = []; // Neues Array zur Verfolgung bedrohter Felder
 	let tileSize: number = 1; // Größe jedes Feldes
 	let width: number = 8; // Brettbreite
 	let depth: number = 8; // Bretttiefe
@@ -27,8 +28,16 @@
 		const { selected, moves } = selectPiece(piece, activePlayer, pieces);
 		selectedPiece = selected;
 		validMoves = moves;
-	}
 
+		// Berechnung der bedrohten Felder (gegnerische Figuren, auf die gezogen werden könnte):
+		threatFields = moves.filter(([x, y]) => {
+			const targetPiece = pieces.find(
+				(p) => p.position[0] === x && p.position[1] === y && p.color !== piece.color
+			);
+			return !!targetPiece; // Nur Gegnerfiguren
+		});
+	}
+  const _ = T; //eslint-disable-line
 	// Spielfigur bewegen
 	function handleMove(targetX: number, targetY: number) {
 		const { resetSelection } = moveTo(
@@ -44,6 +53,7 @@
 		if (resetSelection) {
 			selectedPiece = null;
 			validMoves = [];
+			threatFields = []; // Zurücksetzen der bedrohten Felder
 		}
 	}
 </script>
@@ -57,7 +67,8 @@
 				y={row}
 				tileSize={tileSize}
 				isValidMove={validMoves.some(([x, y]) => x === col && y === row)}
-				onTileClick={(x, y) => handleMove(x, y)}
+				isUnderAttackField={threatFields.some(([x, y]) => x === col && y === row)}
+			onTileClick={(x, y) => handleMove(x, y)}
 			/>
 		{/each}
 	{/each}
@@ -77,6 +88,9 @@
 			]}
 			color={piece.color}
 			isSelected={selectedPiece?.id === piece.id}
+			isUnderAttack={threatFields.some(([x, y]) => {
+				return x === piece.position[0] && y === piece.position[1];
+			})}
 		/>
 	{/each}
 </T.Group>

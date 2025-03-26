@@ -1,12 +1,13 @@
 ﻿<script lang="ts">
-  import { T } from "@threlte/core";
+	import { T } from "@threlte/core";
+
 	export let x: number; // Spaltenindex
 	export let y: number; // Reihenindex
 	export let tileSize: number; // Größe der Kachel
 	export let isValidMove: boolean = false; // Gültige Zielposition?
-
+	export let isUnderAttackField: boolean = false; // Neues Feld unter Angriff
 	export let onTileClick: (x: number, y: number, event: MouseEvent) => void;
-
+	const _ = T; //eslint-disable-line
 </script>
 
 <T.Mesh
@@ -22,7 +23,9 @@
 	<T.PlaneGeometry args={[tileSize, tileSize]} />
 	<T.MeshStandardMaterial
 		color={
-			isValidMove
+			isUnderAttackField
+				? "darkred" // Rot für Angriff
+				: isValidMove
 				? "#00ff00" // Grün für gültige Züge
 				: (x + y) % 2 === 0
 				? "#ffffff" // Weiß
