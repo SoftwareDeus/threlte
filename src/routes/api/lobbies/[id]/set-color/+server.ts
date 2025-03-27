@@ -11,7 +11,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
         return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (color !== 'white' && color !== 'black') {
+    if (color !== 'white' && color !== 'black' && color !== 'random') {
         return json({ error: 'Invalid color' }, { status: 400 });
     }
 
@@ -38,11 +38,11 @@ export const POST: RequestHandler = async ({ params, request }) => {
         slots: {
             slot1: {
                 player: lobby.slots.slot1?.player,
-                color: lobby.slots.slot1?.player === targetPlayer ? color : (color === 'white' ? 'black' : 'white')
+                color: lobby.slots.slot1?.player === targetPlayer ? color : (color === 'white' ? 'black' : color === 'black' ? 'white' : 'random')
             },
             slot2: {
                 player: lobby.slots.slot2?.player,
-                color: lobby.slots.slot2?.player === targetPlayer ? color : (color === 'white' ? 'black' : 'white')
+                color: lobby.slots.slot2?.player === targetPlayer ? color : (color === 'white' ? 'black' : color === 'black' ? 'white' : 'random')
             }
         }
     };

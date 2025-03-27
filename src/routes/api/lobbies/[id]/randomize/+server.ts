@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import type { Lobby } from '$lib/types';
 import { getLobbies, updateLobby } from '$lib/scripts/lobbyStore';
 
 export const POST: RequestHandler = async ({ params, request }) => {
@@ -23,18 +24,24 @@ export const POST: RequestHandler = async ({ params, request }) => {
     }
 
     // Can't randomize if there's no second player
-    if (!lobby.players.black) {
+    if (!lobby.slots.slot2?.player) {
         return json({ error: 'Cannot randomize without a second player' }, { status: 400 });
     }
 
-    // Randomly swap players
+    // Randomly swap colors
     const shouldSwap = Math.random() < 0.5;
-    const updatedLobby = {
+    const updatedLobby: Lobby = {
         ...lobby,
-        players: shouldSwap ? {
-            white: lobby.players.black,
-            black: lobby.players.white
-        } : lobby.players
+        slots: {
+            slot1: {
+                player: lobby.slots.slot1?.player,
+                color: shouldSwap ? 'black' : 'white'
+            },
+            slot2: {
+                player: lobby.slots.slot2?.player,
+                color: shouldSwap ? 'white' : 'black'
+            }
+        }
     };
 
     // Update the lobby

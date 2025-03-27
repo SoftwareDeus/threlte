@@ -14,11 +14,11 @@
         slots: {
             slot1?: {
                 player?: string;
-                color: 'white' | 'black';
+                color: 'white' | 'black' | 'random';
             };
             slot2?: {
                 player?: string;
-                color: 'white' | 'black';
+                color: 'white' | 'black' | 'random';
             };
         };
         timeControl?: {
@@ -78,6 +78,11 @@
         if (!$playerName || !lobby) return;
 
         try {
+            // If either player has random selected, randomize colors before starting
+            if (lobby.slots.slot1?.color === 'random' || lobby.slots.slot2?.color === 'random') {
+                await randomizePlayers();
+            }
+
             const response = await fetch(`/api/lobbies/${lobby.id}/start`, {
                 method: 'POST',
                 headers: {
@@ -128,10 +133,14 @@
         }
     }
 
-    async function setPlayerColor(color: 'white' | 'black', event: Event) {
+    function handleRandomClick() {
+        if (lobby?.slots.slot1?.player && lobby?.slots.slot2?.player) {
+            randomizePlayers();
+        }
+    }
+
+    async function setPlayerColor(targetPlayer: string, color: 'white' | 'black' | 'random') {
         if (!$playerName || !lobby) return;
-        const select = event.target as HTMLSelectElement;
-        const targetPlayer = select.value;
 
         try {
             const response = await fetch(`/api/lobbies/${lobby.id}/set-color`, {
@@ -192,6 +201,38 @@
     }
 </script>
 
+<style>
+    input[type="radio"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #666;
+        border-radius: 50%;
+        outline: none;
+        margin-right: 5px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    input[type="radio"]:checked {
+        border-color: white;
+        background-color: white;
+    }
+
+    input[type="radio"]:checked::before {
+        content: '';
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background-color: #1a1a1a;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
+
 <div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-8">
@@ -209,52 +250,98 @@
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold mb-4">Players</h2>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 bg-white/5 rounded">
+                        <div 
+                            class="flex items-center justify-between p-4 rounded {!lobby.slots.slot1?.color ? 'bg-white/5' : lobby.slots.slot1.color === 'white' ? 'bg-white/20' : lobby.slots.slot1.color === 'black' ? 'bg-black/20' : 'bg-gray-500/20'}">
                             <div class="flex items-center gap-4">
                                 <div>
-                                    <span class="text-lg font-bold">Slot 1 ({lobby.slots.slot1?.color || 'White'})</span>
+                                    <span class="text-lg font-bold">Slot 1</span>
                                     <p class="text-white/70">{lobby.slots.slot1?.player || 'Waiting for player...'}</p>
                                 </div>
                                 {#if isHost()}
-                                    <select
-                                        class="px-2 py-1 bg-[#1a1a1a] border border-white/20 rounded text-white"
-                                        value={lobby.slots.slot1?.player || ''}
-                                        on:change={(e) => setPlayerColor('white', e)}
-                                    >
-                                        <option value="">Waiting for player...</option>
-                                        {#if lobby.slots.slot1?.player}
-                                            <option value={lobby.slots.slot1.player}>White</option>
-                                        {/if}
-                                        {#if lobby.slots.slot2?.player}
-                                            <option value={lobby.slots.slot2.player}>Black</option>
-                                        {/if}
-                                    </select>
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="color-slot1"
+                                                id="white-{lobby?.slots?.slot1?.player}"
+                                                checked={lobby?.slots?.slot1?.color === 'white'}
+                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white' as const)}
+                                                class="w-4 h-4"
+                                            />
+                                            <label for="white-{lobby?.slots?.slot1?.player}" class="text-sm font-medium text-white">White</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="color-slot1"
+                                                id="black-{lobby?.slots?.slot1?.player}"
+                                                checked={lobby?.slots?.slot1?.color === 'black'}
+                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black' as const)}
+                                                class="w-4 h-4"
+                                            />
+                                            <label for="black-{lobby?.slots?.slot1?.player}" class="text-sm font-medium text-white">Black</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="color-slot1"
+                                                id="random-{lobby?.slots?.slot1?.player}"
+                                                checked={lobby?.slots?.slot1?.color === 'random'}
+                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
+                                                class="w-4 h-4"
+                                            />
+                                            <label for="random-{lobby?.slots?.slot1?.player}" class="text-sm font-medium text-white">Random</label>
+                                        </div>
+                                    </div>
                                 {/if}
                             </div>
                             {#if lobby.slots.slot1?.player === $playerName}
                                 <span class="px-3 py-1 bg-[#4CAF50] text-white rounded text-sm">You</span>
                             {/if}
                         </div>
-                        <div class="flex items-center justify-between p-4 bg-white/5 rounded">
+                        <div 
+                            class="flex items-center justify-between p-4 rounded {!lobby.slots.slot2?.color ? 'bg-white/5' : lobby.slots.slot2.color === 'white' ? 'bg-white/20' : lobby.slots.slot2.color === 'black' ? 'bg-black/20' : 'bg-gray-500/20'}">
                             <div class="flex items-center gap-4">
                                 <div>
-                                    <span class="text-lg font-bold">Slot 2 ({lobby.slots.slot2?.color || 'Black'})</span>
+                                    <span class="text-lg font-bold">Slot 2</span>
                                     <p class="text-white/70">{lobby.slots.slot2?.player || 'Waiting for player...'}</p>
                                 </div>
                                 {#if isHost()}
-                                    <select
-                                        class="px-2 py-1 bg-[#1a1a1a] border border-white/20 rounded text-white"
-                                        value={lobby.slots.slot2?.player || ''}
-                                        on:change={(e) => setPlayerColor('black', e)}
-                                    >
-                                        <option value="">Waiting for player...</option>
-                                        {#if lobby.slots.slot1?.player}
-                                            <option value={lobby.slots.slot1.player}>White</option>
-                                        {/if}
-                                        {#if lobby.slots.slot2?.player}
-                                            <option value={lobby.slots.slot2.player}>Black</option>
-                                        {/if}
-                                    </select>
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="color-slot2"
+                                                id="white-{lobby?.slots?.slot2?.player}"
+                                                checked={lobby?.slots?.slot2?.color === 'white'}
+                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white' as const)}
+                                                class="w-4 h-4"
+                                            />
+                                            <label for="white-{lobby?.slots?.slot2?.player}" class="text-sm font-medium text-white">White</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="color-slot2"
+                                                id="black-{lobby?.slots?.slot2?.player}"
+                                                checked={lobby?.slots?.slot2?.color === 'black'}
+                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black' as const)}
+                                                class="w-4 h-4"
+                                            />
+                                            <label for="black-{lobby?.slots?.slot2?.player}" class="text-sm font-medium text-white">Black</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="color-slot2"
+                                                id="random-{lobby?.slots?.slot2?.player}"
+                                                checked={lobby?.slots?.slot2?.color === 'random'}
+                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
+                                                class="w-4 h-4"
+                                            />
+                                            <label for="random-{lobby?.slots?.slot2?.player}" class="text-sm font-medium text-white">Random</label>
+                                        </div>
+                                    </div>
                                 {/if}
                             </div>
                             {#if lobby.slots.slot2?.player === $playerName}
@@ -265,10 +352,10 @@
                     {#if isHost() && isFull()}
                         <div class="mt-4 flex gap-4">
                             <button
-                                on:click={randomizePlayers}
-                                class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                on:click={startGame}
+                                class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                             >
-                                Randomize Colors
+                                Start Game
                             </button>
                         </div>
                     {/if}
@@ -304,14 +391,6 @@
 
                 <div class="flex justify-end gap-4">
                     {#if isHost()}
-                        {#if isFull()}
-                            <button
-                                on:click={startGame}
-                                class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                            >
-                                Start Game
-                            </button>
-                        {/if}
                         <button
                             on:click={deleteLobby}
                             class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
