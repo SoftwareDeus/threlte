@@ -145,7 +145,13 @@
 
         try {
             const response = await fetch(`/api/lobbies/${deleteConfirmId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    playerName: $playerName
+                })
             });
 
             if (!response.ok) {
@@ -202,95 +208,101 @@
 
         <!-- Lobby List -->
         <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
-            {#each lobbies as lobby (lobby.id)}
-                <div class="bg-white/10 rounded-lg p-4 hover:bg-white/20 transition-colors">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-xl font-bold">{lobby.name}</h3>
-                        <div class="flex gap-2">
-                            {#if isHost(lobby)}
+            {#each lobbies as lobby, index (lobby.id)}
+                {#if deleteConfirmId === lobby.id}
+                    <div class="bg-white/10 rounded-lg p-4 h-[100px] flex items-center">
+                        <div class="w-full flex justify-between items-center">
+                            <div class="w-16 text-center text-white/50">
+                                {index + 1}
+                            </div>
+                            <div class="flex-1 text-center">
+                                <h3 class="text-xl font-bold mb-2">Confirm Delete</h3>
+                                <p class="text-white/70">Are you sure you want to delete this lobby?</p>
+                            </div>
+                            <div class="w-48 flex justify-end gap-2">
                                 <button
-                                    on:click={() => startGame(lobby.id)}
-                                    class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                                    on:click={cancelDelete}
+                                    class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                                 >
-                                    Start Game
+                                    Cancel
                                 </button>
                                 <button
-                                    on:click={() => confirmDelete(lobby.id)}
+                                    on:click={deleteLobby}
                                     class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                 >
                                     Delete
                                 </button>
-                            {:else if isJoined(lobby)}
-                                <span class="px-4 py-2 bg-[#4CAF50]/50 text-white rounded">
-                                    Joined
-                                </span>
-                                <button
-                                    on:click={() => confirmDelete(lobby.id)}
-                                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                >
-                                    Leave
-                                </button>
-                            {:else if lobby.players.white && lobby.players.black}
-                                <span class="px-4 py-2 bg-gray-500 text-white rounded">
-                                    Full
-                                </span>
-                                <button
-                                    on:click={() => confirmDelete(lobby.id)}
-                                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                >
-                                    Delete
-                                </button>
-                            {:else}
-                                <button
-                                    on:click={() => joinLobby(lobby.id)}
-                                    class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                                >
-                                    Join
-                                </button>
-                                <button
-                                    on:click={() => confirmDelete(lobby.id)}
-                                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                >
-                                    Delete
-                                </button>
-                            {/if}
+                            </div>
                         </div>
                     </div>
-                    <div class="text-sm text-white/70">
-                        Host: {lobby.players.white || 'Waiting...'}
-                        <br>
-                        Player: {lobby.players.black || 'Waiting...'}
+                {:else}
+                    <div class="bg-white/10 rounded-lg p-4 hover:bg-white/20 transition-colors h-[100px] flex items-center">
+                        <div class="w-full flex justify-between items-center">
+                            <div class="w-16 text-center text-white/50">
+                                {index + 1}
+                            </div>
+                            <div class="flex-1 flex items-center justify-center gap-16">
+                                <h3 class="text-2xl font-bold">{lobby.name}</h3>
+                                <div class="text-sm text-white/70">
+                                    Host: {lobby.players.white || 'Waiting...'}
+                                    <br>
+                                    Player: {lobby.players.black || 'Waiting...'}
+                                </div>
+                            </div>
+                            <div class="w-48 flex justify-end gap-2">
+                                {#if isHost(lobby)}
+                                    <button
+                                        on:click={() => startGame(lobby.id)}
+                                        class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                                    >
+                                        Start Game
+                                    </button>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                {:else if isJoined(lobby)}
+                                    <span class="px-4 py-2 bg-[#4CAF50]/50 text-white rounded">
+                                        Joined
+                                    </span>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                {:else if lobby.players.white && lobby.players.black}
+                                    <span class="px-4 py-2 bg-gray-500 text-white rounded">
+                                        Full
+                                    </span>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                {:else}
+                                    <button
+                                        on:click={() => joinLobby(lobby.id)}
+                                        class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                                    >
+                                        Join
+                                    </button>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        Delete
+                                    </button>
+                                {/if}
+                            </div>
+                        </div>
                     </div>
-                </div>
+                {/if}
             {/each}
         </div>
-
-        <!-- Delete Confirmation -->
-        {#if deleteConfirmId}
-            <div class="fixed inset-0 bg-black/50 flex items-center justify-center">
-                <div class="bg-[#1a1a1a] p-6 rounded-lg max-w-md w-full mx-4">
-                    {#if lobbies.find(l => l.id === deleteConfirmId)}
-                        {@const lobby = lobbies.find(l => l.id === deleteConfirmId)!}
-                        <h3 class="text-xl font-bold mb-4">Confirm {isHost(lobby) ? 'Delete' : 'Leave'}</h3>
-                        <p class="mb-6">Are you sure you want to {isHost(lobby) ? 'delete' : 'leave'} this lobby?</p>
-                    {/if}
-                    <div class="flex justify-end gap-4">
-                        <button
-                            on:click={cancelDelete}
-                            class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            on:click={deleteLobby}
-                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                        >
-                            {lobbies.find(l => l.id === deleteConfirmId) && isHost(lobbies.find(l => l.id === deleteConfirmId)!) ? 'Delete' : 'Leave'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        {/if}
 
         <!-- Error Message -->
         {#if error}
