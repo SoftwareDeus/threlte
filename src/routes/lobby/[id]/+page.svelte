@@ -257,11 +257,11 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <span class="text-lg">{resources.lobby.players.slot1}:</span>
-                                    <span class="text-white/70">
+                                    <span class="text-{resources.colors.ui.text.secondary}">
                                         {lobby.slots.slot1?.player || resources.lobby.players.waitingForPlayer}
                                     </span>
                                     {#if lobby.slots.slot1?.player === $playerName}
-                                        <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                                        <span class="text-{resources.colors.ui.success}">({resources.common.labels.you})</span>
                                     {/if}
                                 </div>
                                 {#if isHost()}
@@ -274,7 +274,7 @@
                                                 value="white"
                                                 checked={lobby?.slots?.slot1?.color === 'white'}
                                                 on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white')}
-                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
+                                                class="form-radio h-4 w-4 text-{resources.colors.ui.success} border-gray-600 focus:ring-{resources.colors.ui.success}"
                                             />
                                             <label for="slot1-white" class="text-white">{resources.lobby.players.color.white}</label>
                                         </div>
@@ -286,7 +286,7 @@
                                                 value="black"
                                                 checked={lobby?.slots?.slot1?.color === 'black'}
                                                 on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black')}
-                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
+                                                class="form-radio h-4 w-4 text-{resources.colors.ui.success} border-gray-600 focus:ring-{resources.colors.ui.success}"
                                             />
                                             <label for="slot1-black" class="text-white">{resources.lobby.players.color.black}</label>
                                         </div>
@@ -298,7 +298,7 @@
                                                 value="random"
                                                 checked={lobby?.slots?.slot1?.color === 'random'}
                                                 on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
-                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
+                                                class="form-radio h-4 w-4 text-{resources.colors.ui.success} border-gray-600 focus:ring-{resources.colors.ui.success}"
                                             />
                                             <label for="slot1-random" class="text-white">{resources.lobby.players.color.random}</label>
                                         </div>
@@ -312,11 +312,11 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <span class="text-lg">{resources.lobby.players.slot2}:</span>
-                                    <span class="text-white/70">
+                                    <span class="text-{resources.colors.ui.text.secondary}">
                                         {lobby.slots.slot2?.player || resources.lobby.players.waitingForPlayer}
                                     </span>
                                     {#if lobby.slots.slot2?.player === $playerName}
-                                        <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                                        <span class="text-{resources.colors.ui.success}">({resources.common.labels.you})</span>
                                     {/if}
                                 </div>
                                 {#if isHost()}
@@ -329,7 +329,7 @@
                                                 value="white"
                                                 checked={lobby?.slots?.slot2?.color === 'white'}
                                                 on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white')}
-                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
+                                                class="form-radio h-4 w-4 text-{resources.colors.ui.success} border-gray-600 focus:ring-{resources.colors.ui.success}"
                                             />
                                             <label for="slot2-white" class="text-white">{resources.lobby.players.color.white}</label>
                                         </div>
@@ -341,7 +341,7 @@
                                                 value="black"
                                                 checked={lobby?.slots?.slot2?.color === 'black'}
                                                 on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black')}
-                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
+                                                class="form-radio h-4 w-4 text-{resources.colors.ui.success} border-gray-600 focus:ring-{resources.colors.ui.success}"
                                             />
                                             <label for="slot2-black" class="text-white">{resources.lobby.players.color.black}</label>
                                         </div>
@@ -353,7 +353,7 @@
                                                 value="random"
                                                 checked={lobby?.slots?.slot2?.color === 'random'}
                                                 on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
-                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
+                                                class="form-radio h-4 w-4 text-{resources.colors.ui.success} border-gray-600 focus:ring-{resources.colors.ui.success}"
                                             />
                                             <label for="slot2-random" class="text-white">{resources.lobby.players.color.random}</label>
                                         </div>

@@ -98,5 +98,26 @@ export const resources = {
             gameOver: 'Game Over!',
             wins: 'wins!'
         }
+    },
+    colors: {
+        board: {
+            white: "#FFFFFF",
+            black: "#000000",
+            validMove: "#90EE90",
+            underAttack: "#FFB6C1",
+            possibleMove: "#ADD8E6"
+        },
+        pieces: {
+            selected: "#FFD700",
+            underAttack: "red",
+            possibleMove: "#ADD8E6"
+        },
+        ui: {
+            success: "#4CAF50",
+            text: {
+                primary: "white",
+                secondary: "white/70"
+            }
+        }
     }
 } as const; 

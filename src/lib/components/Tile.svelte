@@ -1,6 +1,7 @@
 ﻿<script lang="ts">
 	import { T } from "@threlte/core";
 	import { interactivity } from "@threlte/extras";
+	import { resources } from "$lib/resources";
 
 	export let x: number; // Spaltenindex
 	export let y: number; // Reihenindex
@@ -26,10 +27,10 @@
 	<T.PlaneGeometry args={[tileSize, tileSize]} />
 	<T.MeshStandardMaterial
 		color={
-			isValidMove ? "#90EE90" : 
-			isUnderAttackField ? "#FFB6C1" : 
-			hasPieceWithValidMove ? "#ADD8E6" :
-			(x + y) % 2 === 0 ? "#FFFFFF" : "#000000"
+			isValidMove ? resources.colors.board.validMove : 
+			isUnderAttackField ? resources.colors.board.underAttack : 
+			hasPieceWithValidMove ? resources.colors.board.possibleMove :
+			(x + y) % 2 === 0 ? resources.colors.board.white : resources.colors.board.black
 		}
 	/>
 </T.Mesh>

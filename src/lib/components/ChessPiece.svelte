@@ -2,6 +2,7 @@
 	import { T } from "@threlte/core";
 	import { interactivity } from "@threlte/extras";
 	import { ChessPieceType, ChessColor } from "../types";
+	import { resources } from "$lib/resources";
 
 	export let isUnderAttack: boolean = false; // Neuer Zustand für Angriffe
 	export let type: ChessPieceType = ChessPieceType.Pawn;
@@ -23,42 +24,42 @@
 	<T.Mesh>
 		<T.CylinderGeometry args={[0.2, 0.2, 1, 32]} />
 		<T.MeshStandardMaterial 
-			color={isUnderAttack ? "red" : isSelected ? "#FFD700" : hasPossibleMove ? "#ADD8E6" : color} 
+			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "rook"}
 	<T.Mesh>
 		<T.BoxGeometry args={[0.5, 1, 0.5]} />
 		<T.MeshStandardMaterial 
-			color={isUnderAttack ? "red" : isSelected ? "#FFD700" : hasPossibleMove ? "#ADD8E6" : color} 
+			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "knight"}
 	<T.Mesh>
 		<T.ConeGeometry args={[0.4, 1, 8]} />
 		<T.MeshStandardMaterial 
-			color={isUnderAttack ? "red" : isSelected ? "#FFD700" : hasPossibleMove ? "#ADD8E6" : color} 
+			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "bishop"}
 	<T.Mesh>
 		<T.SphereGeometry args={[0.5, 32, 32]} />
 		<T.MeshStandardMaterial 
-			color={isUnderAttack ? "red" : isSelected ? "#FFD700" : hasPossibleMove ? "#ADD8E6" : color} 
+			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "queen"}
 	<T.Mesh>
 		<T.CylinderGeometry args={[0.3, 0.5, 1.5, 32]} />
 		<T.MeshStandardMaterial 
-			color={isUnderAttack ? "red" : isSelected ? "#FFD700" : hasPossibleMove ? "#ADD8E6" : color} 
+			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "king"}
 	<T.Mesh>
 		<T.CylinderGeometry args={[0.35, 0.55, 1.8, 32]} />
 		<T.MeshStandardMaterial 
-			color={isUnderAttack ? "red" : isSelected ? "#FFD700" : hasPossibleMove ? "#ADD8E6" : color} 
+			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {/if}
