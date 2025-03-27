@@ -3,34 +3,35 @@ import type { RequestHandler } from './$types';
 import type { Lobby } from '$lib/types';
 import { getLobbies, updateLobby } from '$lib/scripts/lobbyStore';
 import { ChessColor } from '$lib/types/chess';
+import { resources } from '$lib/resources';
 
 export const POST: RequestHandler = async ({ params, request }) => {
     const { playerName, targetPlayer, color } = await request.json();
     const lobbyId = params.id;
 
     if (!playerName || !targetPlayer || !color) {
-        return json({ error: 'Missing required fields' }, { status: 400 });
+        return json({ error: resources.common.errors.missingRequiredFields }, { status: 400 });
     }
 
     if (color !== ChessColor.White && color !== ChessColor.Black && color !== 'random') {
-        return json({ error: 'Invalid color' }, { status: 400 });
+        return json({ error: resources.common.errors.invalidColor }, { status: 400 });
     }
 
     const currentLobbies = getLobbies();
     const lobby = currentLobbies.find(l => l.id === lobbyId);
     
     if (!lobby) {
-        return json({ error: 'Lobby not found' }, { status: 404 });
+        return json({ error: resources.common.errors.lobbyNotFound }, { status: 404 });
     }
 
     // Only the host can set colors
     if (lobby.host !== playerName) {
-        return json({ error: 'Only the host can set colors' }, { status: 403 });
+        return json({ error: resources.common.errors.onlyHostCanSetColors }, { status: 403 });
     }
 
     // Validate that target player is in the lobby
     if (lobby.slots.slot1?.player !== targetPlayer && lobby.slots.slot2?.player !== targetPlayer) {
-        return json({ error: 'Target player is not in this lobby' }, { status: 400 });
+        return json({ error: resources.common.errors.targetPlayerNotFound }, { status: 400 });
     }
 
     // Create updated lobby with new color assignments
