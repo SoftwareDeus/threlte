@@ -6,6 +6,7 @@
 	import { playerName } from "$lib/stores/playerStore";
 	import { ChessColor } from "$lib/types/chess";
 	import { goto } from "$app/navigation";
+	import { resources } from '$lib/resources';
 
 	let whiteTime = 600;
 	let blackTime = 600;
@@ -46,9 +47,9 @@
 
 			const lobby = await response.json();
 			whitePlayer = lobby.slots.slot1?.color === 'white' ? lobby.slots.slot1.player :
-						 lobby.slots.slot2?.color === 'white' ? lobby.slots.slot2.player : "White";
+						 lobby.slots.slot2?.color === 'white' ? lobby.slots.slot2.player : resources.chess.pieces.white.king;
 			blackPlayer = lobby.slots.slot1?.color === 'black' ? lobby.slots.slot1.player :
-						 lobby.slots.slot2?.color === 'black' ? lobby.slots.slot2.player : "Black";
+						 lobby.slots.slot2?.color === 'black' ? lobby.slots.slot2.player : resources.chess.pieces.black.king;
 			
 			// Set the player's color based on their slot
 			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
@@ -57,7 +58,7 @@
 						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 null;
 		} catch (error) {
-			console.error("Failed to fetch player info:", error);
+			console.error(resources.common.errors.fetchFailed, error);
 		}
 	}
 
@@ -93,7 +94,7 @@
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to update time');
+				throw new Error(data.error || resources.common.errors.updateFailed);
 			}
 
 			const state = await response.json();
@@ -102,7 +103,7 @@
 				blackTime = state.timeRemaining.black;
 			}
 		} catch (error) {
-			console.error('Failed to update time:', error);
+			console.error(resources.common.errors.updateFailed, error);
 		}
 	}
 
@@ -134,12 +135,12 @@
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to delete lobby');
+				throw new Error(resources.common.errors.deleteFailed);
 			}
 
 			goto('/lobby');
 		} catch (error) {
-			console.error('Failed to delete lobby:', error);
+			console.error(resources.common.errors.deleteFailed, error);
 		}
 	}
 </script>
@@ -150,29 +151,29 @@
 			<span class="name">
 				{whitePlayer}
 				{#if isWhitePlayer}
-					<span class="you">(you)</span>
+					<span class="you">({resources.common.labels.you})</span>
 				{/if}
 			</span>
 			<span class="time">{whiteTimeDisplay}</span>
-			<span class="captured">Captured: {whiteCaptured}</span>
+			<span class="captured">{resources.chess.game.captured}: {whiteCaptured}</span>
 		</div>
 		<div class="center-section">
 			<div class="game-status">
 				{#if isGameOver}
-					<div class="winner">Game Over! {winner} wins!</div>
+					<div class="winner">{resources.chess.game.gameOver} {winner} {resources.chess.game.wins}</div>
 				{/if}
 			</div>
-			<button class="back-button" on:click={handleBackToLobby}>Back to Lobby</button>
+			<button class="back-button" on:click={handleBackToLobby}>{resources.common.labels.backToLobbies}</button>
 		</div>
 		<div class="player black {isBlackTurn ? 'active' : ''}">
 			<span class="name">
 				{#if isBlackPlayer}
-					<span class="you">(you)</span>
+					<span class="you">({resources.common.labels.you})</span>
 				{/if}
 				{blackPlayer}
 			</span>
 			<span class="time">{blackTimeDisplay}</span>
-			<span class="captured">Captured: {blackCaptured}</span>
+			<span class="captured">{resources.chess.game.captured}: {blackCaptured}</span>
 		</div>
 	</div>
 </div>
@@ -250,7 +251,7 @@
 
 	.captured {
 		font-size: 0.9em;
-		opacity: 0.8;
+		color: #ccc;
 	}
 
 	.game-status {
@@ -258,22 +259,22 @@
 	}
 
 	.winner {
-		color: #ffd700;
+		font-size: 1.2em;
 		font-weight: bold;
+		color: #4CAF50;
 	}
 
 	.back-button {
-		background: #4a4a4a;
-		color: white;
+		padding: 5px 10px;
+		background: rgba(255, 255, 255, 0.1);
 		border: none;
-		padding: 8px 16px;
-		border-radius: 5px;
+		border-radius: 4px;
+		color: white;
 		cursor: pointer;
-		font-size: 14px;
-		transition: background-color 0.2s;
+		transition: background 0.2s;
 	}
 
 	.back-button:hover {
-		background: #666666;
+		background: rgba(255, 255, 255, 0.2);
 	}
 </style> 

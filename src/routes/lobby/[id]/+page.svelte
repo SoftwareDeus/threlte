@@ -4,6 +4,7 @@
     import { page } from '$app/stores';
     import { playerName } from '$lib/stores/playerStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
+    import { resources } from '$lib/resources';
 
     interface Lobby {
         id: string;
@@ -37,7 +38,7 @@
 
     onMount(() => {
         if (!$playerName) {
-            error = 'Please enter your name in the main menu';
+            error = resources.common.errors.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -69,13 +70,13 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to update time settings');
+                throw new Error(resources.common.errors.updateFailed);
             }
 
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = 'Failed to update time settings';
+            error = resources.common.errors.updateFailed;
             console.error(e);
         }
     }
@@ -89,7 +90,7 @@
         try {
             const response = await fetch(`/api/lobbies/${$page.params.id}`);
             if (!response.ok) {
-                throw new Error('Failed to fetch lobby');
+                throw new Error(resources.common.errors.fetchFailed);
             }
             const data = await response.json();
             lobby = data;
@@ -101,7 +102,7 @@
                 goto('/game');
             }
         } catch (e) {
-            error = 'Failed to fetch lobby';
+            error = resources.common.errors.fetchFailed;
             console.error(e);
         }
     }
@@ -127,14 +128,14 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to start game');
+                throw new Error(resources.common.errors.startFailed);
             }
 
             // Set the lobbyId in the store before redirecting
             lobbyId.set(lobby.id);
             goto('/game');
         } catch (e) {
-            error = 'Failed to start game';
+            error = resources.common.errors.startFailed;
             console.error(e);
         }
     }
@@ -154,13 +155,13 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to randomize players');
+                throw new Error(resources.common.errors.updateFailed);
             }
 
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = 'Failed to randomize players';
+            error = resources.common.errors.updateFailed;
             console.error(e);
         }
     }
@@ -188,13 +189,13 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to set player color');
+                throw new Error(resources.common.errors.updateFailed);
             }
 
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = 'Failed to set player color';
+            error = resources.common.errors.updateFailed;
             console.error(e);
         }
     }
@@ -214,12 +215,12 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to delete lobby');
+                throw new Error(resources.common.errors.deleteFailed);
             }
 
             goto('/lobby');
         } catch (e) {
-            error = 'Failed to delete lobby';
+            error = resources.common.errors.deleteFailed;
             console.error(e);
         }
     }
@@ -232,6 +233,207 @@
         return !!lobby?.slots.slot1?.player && !!lobby?.slots.slot2?.player;
     }
 </script>
+
+<div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-bold">{lobby?.name || resources.common.labels.loading}</h1>
+            <button
+                on:click={() => goto('/lobby')}
+                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+            >
+                {resources.common.labels.backToLobbies}
+            </button>
+        </div>
+
+        {#if lobby}
+            <div class="space-y-8">
+                <!-- Players -->
+                <div class="bg-white/10 rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4">{resources.lobby.players.title}</h2>
+                    <div class="space-y-4">
+                        <!-- Slot 1 -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <span class="text-lg">{resources.lobby.players.slot1}:</span>
+                                <span class="text-white/70">
+                                    {lobby.slots.slot1?.player || resources.lobby.players.waitingForPlayer}
+                                </span>
+                                {#if lobby.slots.slot1?.player === $playerName}
+                                    <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                                {/if}
+                            </div>
+                            {#if isHost()}
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="slot1-color"
+                                            checked={lobby?.slots?.slot1?.color === 'white'}
+                                            on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white')}
+                                        />
+                                        {resources.lobby.players.color.white}
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="slot1-color"
+                                            checked={lobby?.slots?.slot1?.color === 'black'}
+                                            on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black')}
+                                        />
+                                        {resources.lobby.players.color.black}
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="slot1-color"
+                                            checked={lobby?.slots?.slot1?.color === 'random'}
+                                            on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
+                                        />
+                                        {resources.lobby.players.color.random}
+                                    </label>
+                                </div>
+                            {/if}
+                        </div>
+
+                        <!-- Slot 2 -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <span class="text-lg">{resources.lobby.players.slot2}:</span>
+                                <span class="text-white/70">
+                                    {lobby.slots.slot2?.player || resources.lobby.players.waitingForPlayer}
+                                </span>
+                                {#if lobby.slots.slot2?.player === $playerName}
+                                    <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                                {/if}
+                            </div>
+                            {#if isHost()}
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="slot2-color"
+                                            checked={lobby?.slots?.slot2?.color === 'white'}
+                                            on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white')}
+                                        />
+                                        {resources.lobby.players.color.white}
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="slot2-color"
+                                            checked={lobby?.slots?.slot2?.color === 'black'}
+                                            on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black')}
+                                        />
+                                        {resources.lobby.players.color.black}
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="slot2-color"
+                                            checked={lobby?.slots?.slot2?.color === 'random'}
+                                            on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
+                                        />
+                                        {resources.lobby.players.color.random}
+                                    </label>
+                                </div>
+                            {/if}
+                        </div>
+
+                        {#if isHost() && isFull()}
+                            <div class="flex justify-end mt-4">
+                                <button
+                                    on:click={handleRandomClick}
+                                    class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                                >
+                                    {resources.common.buttons.randomize}
+                                </button>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+
+                <!-- Time Control -->
+                <div class="bg-white/10 rounded-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4">{resources.lobby.timeControl.title}</h2>
+                    <div class="space-y-4">
+                        {#if isHost()}
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">{resources.lobby.timeControl.minutesLabel}</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="60"
+                                    bind:value={timeControl.minutes}
+                                    class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
+                                />
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">{resources.lobby.timeControl.incrementLabel}</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="60"
+                                    bind:value={timeControl.increment}
+                                    class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
+                                />
+                            </div>
+                        {:else}
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">{resources.lobby.timeControl.minutesLabel}</label>
+                                <span class="text-white">{lobby?.timeControl?.minutes || 10}</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">{resources.lobby.timeControl.incrementLabel}</label>
+                                <span class="text-white">{lobby?.timeControl?.increment || 0}</span>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-4">
+                    {#if isHost()}
+                        <button
+                            on:click={deleteLobby}
+                            class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                        >
+                            {resources.common.buttons.delete}
+                        </button>
+                        {#if isFull()}
+                            <button
+                                on:click={startGame}
+                                class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                            >
+                                {resources.common.buttons.start}
+                            </button>
+                        {/if}
+                    {:else}
+                        <button
+                            on:click={deleteLobby}
+                            class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                        >
+                            {resources.common.buttons.leave}
+                        </button>
+                    {/if}
+                </div>
+            </div>
+        {/if}
+
+        <!-- Error Message -->
+        {#if error}
+            <div class="fixed bottom-4 right-4 bg-red-500/90 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-4">
+                <span>{error}</span>
+                <button
+                    on:click={() => error = null}
+                    class="text-white hover:text-white/80"
+                >
+                    {resources.common.errors.closeButton}
+                </button>
+            </div>
+        {/if}
+    </div>
+</div>
 
 <style>
     input[type="radio"] {
@@ -248,219 +450,18 @@
     }
 
     input[type="radio"]:checked {
-        border-color: white;
-        background-color: white;
+        border-color: #4CAF50;
     }
 
-    input[type="radio"]:checked::before {
+    input[type="radio"]:checked::after {
         content: '';
         position: absolute;
         width: 8px;
         height: 8px;
-        background-color: #1a1a1a;
+        background: #4CAF50;
         border-radius: 50%;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
     }
-</style>
-
-<div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-4xl font-bold">Lobby: {lobby?.name || 'Loading...'}</h1>
-            <button
-                on:click={() => goto('/lobby')}
-                class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-            >
-                Back to Lobbies
-            </button>
-        </div>
-
-        {#if lobby}
-            <div class="bg-white/10 rounded-lg p-6">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold mb-4">Players</h2>
-                    <div class="space-y-4">
-                        <div 
-                            class="flex items-center justify-between p-4 rounded {!lobby.slots.slot1?.color ? 'bg-white/5' : lobby.slots.slot1.color === 'white' ? 'bg-white/20' : lobby.slots.slot1.color === 'black' ? 'bg-black/20' : 'bg-gray-500/20'}">
-                            <div class="flex items-center gap-4">
-                                <div>
-                                    <span class="text-lg font-bold">Slot 1</span>
-                                    <p class="text-white/70">{lobby.slots.slot1?.player || 'Waiting for player...'}</p>
-                                </div>
-                                {#if isHost()}
-                                    <div class="flex items-center gap-4">
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="color-slot1"
-                                                id="white-{lobby?.slots?.slot1?.player}"
-                                                checked={lobby?.slots?.slot1?.color === 'white'}
-                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white' as const)}
-                                                class="w-4 h-4"
-                                            />
-                                            <label for="white-{lobby?.slots?.slot1?.player}" class="text-sm font-medium text-white">White</label>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="color-slot1"
-                                                id="black-{lobby?.slots?.slot1?.player}"
-                                                checked={lobby?.slots?.slot1?.color === 'black'}
-                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black' as const)}
-                                                class="w-4 h-4"
-                                            />
-                                            <label for="black-{lobby?.slots?.slot1?.player}" class="text-sm font-medium text-white">Black</label>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="color-slot1"
-                                                id="random-{lobby?.slots?.slot1?.player}"
-                                                checked={lobby?.slots?.slot1?.color === 'random'}
-                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
-                                                class="w-4 h-4"
-                                            />
-                                            <label for="random-{lobby?.slots?.slot1?.player}" class="text-sm font-medium text-white">Random</label>
-                                        </div>
-                                    </div>
-                                {/if}
-                            </div>
-                            {#if lobby.slots.slot1?.player === $playerName}
-                                <span class="px-3 py-1 bg-[#4CAF50] text-white rounded text-sm">You</span>
-                            {/if}
-                        </div>
-                        <div 
-                            class="flex items-center justify-between p-4 rounded {!lobby.slots.slot2?.color ? 'bg-white/5' : lobby.slots.slot2.color === 'white' ? 'bg-white/20' : lobby.slots.slot2.color === 'black' ? 'bg-black/20' : 'bg-gray-500/20'}">
-                            <div class="flex items-center gap-4">
-                                <div>
-                                    <span class="text-lg font-bold">Slot 2</span>
-                                    <p class="text-white/70">{lobby.slots.slot2?.player || 'Waiting for player...'}</p>
-                                </div>
-                                {#if isHost()}
-                                    <div class="flex items-center gap-4">
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="color-slot2"
-                                                id="white-{lobby?.slots?.slot2?.player}"
-                                                checked={lobby?.slots?.slot2?.color === 'white'}
-                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white' as const)}
-                                                class="w-4 h-4"
-                                            />
-                                            <label for="white-{lobby?.slots?.slot2?.player}" class="text-sm font-medium text-white">White</label>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="color-slot2"
-                                                id="black-{lobby?.slots?.slot2?.player}"
-                                                checked={lobby?.slots?.slot2?.color === 'black'}
-                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black' as const)}
-                                                class="w-4 h-4"
-                                            />
-                                            <label for="black-{lobby?.slots?.slot2?.player}" class="text-sm font-medium text-white">Black</label>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="radio"
-                                                name="color-slot2"
-                                                id="random-{lobby?.slots?.slot2?.player}"
-                                                checked={lobby?.slots?.slot2?.color === 'random'}
-                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
-                                                class="w-4 h-4"
-                                            />
-                                            <label for="random-{lobby?.slots?.slot2?.player}" class="text-sm font-medium text-white">Random</label>
-                                        </div>
-                                    </div>
-                                {/if}
-                            </div>
-                            {#if lobby.slots.slot2?.player === $playerName}
-                                <span class="px-3 py-1 bg-[#4CAF50] text-white rounded text-sm">You</span>
-                            {/if}
-                        </div>
-                    </div>
-                    {#if isHost() && isFull()}
-                        <div class="mt-4 flex gap-4">
-                            <button
-                                on:click={startGame}
-                                class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                            >
-                                Start Game
-                            </button>
-                        </div>
-                    {/if}
-                </div>
-
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold mb-4">Time Control</h2>
-                    <div class="space-y-4 bg-white/5 rounded p-4">
-                        {#if isHost()}
-                            <div class="flex items-center gap-4">
-                                <label class="text-lg">Minutes per player:</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="60"
-                                    bind:value={timeControl.minutes}
-                                    class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
-                                />
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <label class="text-lg">Increment (seconds):</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    max="60"
-                                    bind:value={timeControl.increment}
-                                    class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
-                                />
-                            </div>
-                        {:else}
-                            <div class="flex items-center gap-4">
-                                <label class="text-lg">Minutes per player:</label>
-                                <span class="text-white">{lobby?.timeControl?.minutes || 10}</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <label class="text-lg">Increment (seconds):</label>
-                                <span class="text-white">{lobby?.timeControl?.increment || 0}</span>
-                            </div>
-                        {/if}
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-4">
-                    {#if isHost()}
-                        <button
-                            on:click={deleteLobby}
-                            class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                        >
-                            Delete Lobby
-                        </button>
-                    {:else}
-                        <button
-                            on:click={deleteLobby}
-                            class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                        >
-                            Leave Lobby
-                        </button>
-                    {/if}
-                </div>
-            </div>
-        {/if}
-
-        <!-- Error Message -->
-        {#if error}
-            <div class="fixed bottom-4 right-4 bg-red-500/90 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-4">
-                <span>{error}</span>
-                <button
-                    on:click={() => error = null}
-                    class="text-white hover:text-white/80"
-                >
-                    ×
-                </button>
-            </div>
-        {/if}
-    </div>
-</div> 
+</style> 
