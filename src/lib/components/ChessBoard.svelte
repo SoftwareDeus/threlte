@@ -1,96 +1,116 @@
 ﻿<script lang="ts">
 	import { T } from "@threlte/core";
-	import type { ChessPieceData } from "../types";
-	import ChessPiece from "../components/ChessPiece.svelte";
-	import Tile from "../components/Tile.svelte";
-	import { gameState } from "../scripts/gameState";
-	import { selectPiece, moveTo } from "../scripts/chessHelpers";
-	import { ChessColor } from "../types";
+	import type { ChessPiece } from "$lib/types/chess";
+	import ChessPieceComponent from "./ChessPiece.svelte";
+	import Tile from "./Tile.svelte";
+	import { gameState } from "$lib/stores/gameStore";
+	import { selectPiece, moveTo } from "$lib/scripts/chessHelpers";
+	import { ChessColor } from "$lib/types/chess";
 
-	let selectedPiece: ChessPieceData | null = null;
+	let selectedPiece: ChessPiece | null = null;
 	let validMoves: [number, number][] = [];
-	let threatFields: [number, number][] = []; // Neues Array zur Verfolgung bedrohter Felder
-	let tileSize: number = 1; // Größe jedes Feldes
-	let width: number = 8; // Brettbreite
-	let depth: number = 8; // Bretttiefe
+	let threatFields: [number, number][] = [];
+	let tileSize: number = 1;
+	let width: number = 8;
+	let depth: number = 8;
 
-	let pieces: ChessPieceData[] = []; // Aktive Schachfiguren
-	let activePlayer: ChessColor = ChessColor.White; // Aktiver Spieler
+	let pieces: ChessPiece[] = [];
+	let activePlayer: ChessColor = ChessColor.White;
 
-	// Spielstatus abonnieren
+	// Convert chess notation to numeric coordinates
+	function chessToNumeric(position: string): [number, number] {
+		const [file, rank] = position.split('');
+		const x = file.charCodeAt(0) - 'a'.charCodeAt(0);
+		const y = 8 - parseInt(rank);
+		return [x, y];
+	}
+
+	// Convert numeric coordinates to chess notation
+	function numericToChess(x: number, y: number): string {
+		const file = String.fromCharCode('a'.charCodeAt(0) + x);
+		const rank = 8 - y;
+		return `${file}${rank}`;
+	}
+
+	// Subscribe to game state
 	gameState.subscribe((state) => {
-		pieces = state.pieces;
+		pieces = state.board;
 		activePlayer = state.activePlayer;
 	});
 
-	// Spielfigur auswählen
-	function handleSelect(piece: ChessPieceData) {
+	// Select a piece
+	function handleSelect(piece: ChessPiece) {
 		const { selected, moves } = selectPiece(piece, activePlayer, pieces);
 		selectedPiece = selected;
 		validMoves = moves;
 
-		// Berechnung der bedrohten Felder (gegnerische Figuren, auf die gezogen werden könnte):
+		// Calculate threatened fields (opponent pieces that could be captured)
 		threatFields = moves.filter(([x, y]) => {
 			const targetPiece = pieces.find(
-				(p) => p.position[0] === x && p.position[1] === y && p.color !== piece.color
+				(p) => p.position === numericToChess(x, y) && p.color !== piece.color
 			);
-			return !!targetPiece; // Nur Gegnerfiguren
+			return !!targetPiece;
 		});
 	}
-  const _ = T; //eslint-disable-line
-	// Spielfigur bewegen
-	function handleMove(targetX: number, targetY: number) {
-		const { resetSelection } = moveTo(
-			selectedPiece,
-			targetX,
-			targetY,
-			pieces,
-			gameState,
-			activePlayer
-		);
 
-		// Auswahl zurücksetzen, wenn der Zug abgeschlossen ist
-		if (resetSelection) {
+	// Move a piece
+	async function handleMove(targetX: number, targetY: number) {
+		if (!selectedPiece) return;
+
+		try {
+			const result = await moveTo(
+				selectedPiece,
+				targetX,
+				targetY,
+				pieces,
+				gameState,
+				activePlayer
+			);
+
+			// Reset selection after move
 			selectedPiece = null;
 			validMoves = [];
-			threatFields = []; // Zurücksetzen der bedrohten Felder
+			threatFields = [];
+		} catch (error) {
+			console.error('Move failed:', error);
+			// Reset selection on error
+			selectedPiece = null;
+			validMoves = [];
+			threatFields = [];
 		}
+	}
+
+	function handleTileClick(x: number, y: number, event: MouseEvent) {
+		handleMove(x, y);
 	}
 </script>
 
 <T.Group>
-	<!-- Brett-Rendering -->
-	{#each Array(width).keys() as row}
-		{#each Array(depth).keys() as col}
+	{#each Array(width) as _, x}
+		{#each Array(depth) as _, y}
 			<Tile
-				x={col}
-				y={row}
+				x={x}
+				y={y}
 				tileSize={tileSize}
-				isValidMove={validMoves.some(([x, y]) => x === col && y === row)}
-				isUnderAttackField={threatFields.some(([x, y]) => x === col && y === row)}
-			onTileClick={(x, y) => handleMove(x, y)}
+				isValidMove={validMoves.some(([mx, my]) => mx === x && my === y)}
+				isUnderAttackField={threatFields.some(([mx, my]) => mx === x && my === y)}
+				onTileClick={handleTileClick}
 			/>
 		{/each}
 	{/each}
 
-	<!-- Figuren-Rendering -->
-	{#each pieces as piece (piece.id)}
-		<ChessPiece
-			onclickDelegate={(event: MouseEvent) => {
-				event.stopPropagation();
-				handleSelect(piece);
-			}}
+	{#each pieces as piece}
+		{@const [x, y] = chessToNumeric(piece.position)}
+		<ChessPieceComponent
 			type={piece.type}
-			position={[
-				piece.position[0] * tileSize - (width * tileSize) / 2 + tileSize / 2,
-				piece.position[2] + 0.5,
-				piece.position[1] * tileSize - (depth * tileSize) / 2 + tileSize / 2,
-			]}
 			color={piece.color}
-			isSelected={selectedPiece?.id === piece.id}
-			isUnderAttack={threatFields.some(([x, y]) => {
-				return x === piece.position[0] && y === piece.position[1];
-			})}
+			position={[
+				x * tileSize - (width * tileSize) / 2 + tileSize / 2,
+				0.5,
+				y * tileSize - (depth * tileSize) / 2 + tileSize / 2
+			]}
+			isSelected={selectedPiece?.position === piece.position}
+			onclickDelegate={() => handleSelect(piece)}
 		/>
 	{/each}
 </T.Group>

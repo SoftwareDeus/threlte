@@ -44,7 +44,7 @@ const startConfiguration: ChessPieceData[] = [
 ];
 
 // Initialzustand des Spiels
-const initialState: GameState = {
+export const initialState: GameState = {
 	pieces: startConfiguration,
 	activePlayer: ChessColor.White,
 	capturedPieces: {

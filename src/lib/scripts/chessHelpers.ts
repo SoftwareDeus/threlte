@@ -1,88 +1,111 @@
-﻿import type { ChessPieceData } from "../types";
-import { ChessColor } from "../types";
-import { validateMove, getValidMoves } from "./moveValidation"; // Importiere die neuen Funktionen
-import { gameState } from "./gameState";
+﻿import type { ChessPiece, GameState } from "$lib/types/chess";
+import { ChessColor } from "$lib/types/chess";
+import { validateMove, getValidMoves } from "./moveValidation";
+import { gameState } from "$lib/stores/gameStore";
+import { lobbyId } from "$lib/stores/lobbyStore";
+import { playerName } from "$lib/stores/playerStore";
+import { get } from "svelte/store";
 
-// Suche eine Figur an einer bestimmten Position
+// Convert numeric coordinates to chess notation
+function numericToChess(x: number, y: number): string {
+	const file = String.fromCharCode('a'.charCodeAt(0) + x);
+	const rank = 8 - y;
+	return `${file}${rank}`;
+}
+
+// Convert chess notation to numeric coordinates
+function chessToNumeric(position: string): [number, number] {
+	const [file, rank] = position.split('');
+	const x = file.charCodeAt(0) - 'a'.charCodeAt(0);
+	const y = 8 - parseInt(rank);
+	return [x, y];
+}
+
+// Find a piece at a specific position
 export function getPieceAtPosition(
 	x: number,
 	y: number,
-	pieces: ChessPieceData[]
-): ChessPieceData | null {
-	return (
-		pieces.find(
-			(piece) => piece.position[0] === x && piece.position[1] === y
-		) || null
-	);
+	pieces: ChessPiece[]
+): ChessPiece | null {
+	const position = numericToChess(x, y);
+	return pieces.find(
+		(piece) => piece.position === position
+	) || null;
 }
 
-// Wähle eine Spielfigur aus und berechne ihre möglichen Züge
+// Select a piece and calculate its possible moves
 export function selectPiece(
-	selectedPiece: ChessPieceData | null,
+	selectedPiece: ChessPiece | null,
 	activePlayer: ChessColor,
-	pieces: ChessPieceData[],
-): { selected: ChessPieceData | null; moves: [number, number][] } {
-	// Wenn keine Figur gewählt wurde, Beenden
+	pieces: ChessPiece[],
+): { selected: ChessPiece | null; moves: [number, number][] } {
 	if (!selectedPiece) return { selected: null, moves: [] };
-
-	// Wenn die Figur nicht die des aktiven Spielers ist, beenden
 	if (selectedPiece.color !== activePlayer) return { selected: null, moves: [] };
-
-	// Finde alle gültigen Züge für die ausgewählte Figur
 	const validMoves = getValidMoves(selectedPiece, pieces);
-
 	return {
 		selected: selectedPiece,
 		moves: validMoves
 	};
 }
 
-// Bewegungslogik für eine Figur
-export function moveTo(
-	selectedPiece: ChessPieceData | null,
+// Movement logic for a piece
+export async function moveTo(
+	selectedPiece: ChessPiece | null,
 	targetX: number,
 	targetY: number,
-	pieces: ChessPieceData[],
+	pieces: ChessPiece[],
 	store: typeof gameState,
 	activePlayer: ChessColor,
-): { resetSelection: boolean } {
-	// Wenn keine Figur ausgewählt ist, beenden
-	if (!selectedPiece) return { resetSelection: false };
+): Promise<{ resetSelection: () => void }> {
+	if (!selectedPiece) return { resetSelection: () => {} };
+	if (!validateMove(selectedPiece, targetX, targetY, pieces)) {
+		console.error('Invalid move');
+		return { resetSelection: () => {} };
+	}
 
-	// Validieren, ob der Zug gültig ist
-	const isValid = validateMove(selectedPiece, [targetX, targetY], pieces);
-	if (!isValid) return { resetSelection: false };
+	const move = {
+		pieceId: selectedPiece.position,
+		targetPosition: numericToChess(targetX, targetY)
+	};
 
-	const updatedPieces = pieces.map((piece) => {
-		// Wenn die ausgewählte Figur gefunden wurde, aktualisiere ihre Position
-		if (piece.id === selectedPiece.id) {
-			return {
-				...piece,
-				position: [targetX, targetY, piece.position[2]]
-			};
-		}
-		// Entferne geschlagene Figuren an der Zielposition
-		if (
-			piece.position[0] === targetX &&
-			piece.position[1] === targetY &&
-			piece.color !== selectedPiece.color
-		) {
-			return null;
+	try {
+		const currentState = get(store);
+		const currentLobbyId = get(lobbyId);
+		const currentPlayerName = get(playerName);
+		
+		if (!currentLobbyId) {
+			console.error('Missing lobby ID');
+			return { resetSelection: () => {} };
 		}
 
-		return piece;
-	}).filter((piece): piece is ChessPieceData => piece !== null);
-
-	// Aktualisiere den Spielstatus im Store
-	store.set({
-		pieces: updatedPieces,
-		activePlayer: activePlayer === ChessColor.White ? ChessColor.Black : ChessColor.White,
-		capturedPieces: {
-			white: updatedPieces.filter((piece) => piece.color === ChessColor.Black),
-			black: updatedPieces.filter((piece) => piece.color === ChessColor.White)
+		if (!currentPlayerName) {
+			console.error('Missing player name');
+			return { resetSelection: () => {} };
 		}
-	});
 
-	// Auswahl zurücksetzen
-	return { resetSelection: true };
+		const response = await fetch(`/api/game/${currentLobbyId}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				playerName: currentPlayerName,
+				move
+			})
+		});
+
+		if (!response.ok) {
+			const error = await response.json();
+			console.error('Move failed:', error);
+			throw new Error(error.error || 'Move failed');
+		}
+
+		const newState = await response.json();
+		store.set(newState);
+
+		return { resetSelection: () => {} };
+	} catch (error) {
+		console.error('Failed to send move:', error);
+		throw error;
+	}
 }
