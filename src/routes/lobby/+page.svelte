@@ -35,7 +35,7 @@
 
     onMount(async () => {
         if (!$playerName) {
-            error = resources.common.errors.nameRequired;
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -45,22 +45,25 @@
     async function fetchLobbies() {
         try {
             const response = await fetch('/api/lobbies');
+            if (!response.ok) {
+                throw new Error(resources.errors.common.fetchFailed);
+            }
             lobbies = await response.json();
         } catch (e) {
-            error = resources.common.errors.fetchFailed;
+            error = resources.errors.common.fetchFailed;
             console.error(e);
         }
     }
 
     async function createLobby() {
         if (!$playerName) {
-            error = resources.common.errors.nameRequired;
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
 
         if (!newLobbyName.trim()) {
-            error = resources.lobby.nameInput.placeholder;
+            error = resources.errors.common.lobbyNameRequired;
             return;
         }
 
@@ -77,20 +80,21 @@
             });
 
             if (!response.ok) {
-                throw new Error(resources.common.errors.createFailed);
+                throw new Error(resources.errors.common.createFailed);
             }
 
             const newLobby = await response.json();
+            lobbies = [...lobbies, newLobby];
             goto(`/lobby/${newLobby.id}`);
         } catch (e) {
-            error = resources.common.errors.createFailed;
+            error = resources.errors.common.createFailed;
             console.error(e);
         }
     }
 
     async function joinLobby(lobbyId: string) {
         if (!$playerName) {
-            error = resources.common.errors.nameRequired;
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -107,19 +111,21 @@
             });
 
             if (!response.ok) {
-                throw new Error(resources.common.errors.joinFailed);
+                throw new Error(resources.errors.common.joinFailed);
             }
 
+            const updatedLobby = await response.json();
+            lobbies = lobbies.map(l => l.id === lobbyId ? updatedLobby : l);
             goto(`/lobby/${lobbyId}`);
         } catch (e) {
-            error = resources.common.errors.joinFailed;
+            error = resources.errors.common.joinFailed;
             console.error(e);
         }
     }
 
     async function startGame(id: string) {
         if (!$playerName) {
-            error = resources.common.errors.nameRequired;
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -136,21 +142,22 @@
             });
 
             if (!response.ok) {
-                throw new Error(resources.common.errors.startFailed);
+                throw new Error(resources.errors.common.startFailed);
             }
 
-            // Set the lobbyId in the store before redirecting
+            const updatedLobby = await response.json();
+            lobbies = lobbies.map(l => l.id === id ? updatedLobby : l);
             lobbyId.set(id);
-            goto('/game');
+            goto(`/game/${id}`);
         } catch (e) {
-            error = resources.common.errors.startFailed;
+            error = resources.errors.common.startFailed;
             console.error(e);
         }
     }
 
     async function deleteLobby() {
         if (!$playerName || !deleteConfirmId) {
-            error = resources.common.errors.nameRequired;
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -167,13 +174,13 @@
             });
 
             if (!response.ok) {
-                throw new Error(resources.common.errors.deleteFailed);
+                throw new Error(resources.errors.common.deleteFailed);
             }
 
             deleteConfirmId = null;
             await fetchLobbies();
         } catch (e) {
-            error = resources.common.errors.deleteFailed;
+            error = resources.errors.common.deleteFailed;
             console.error(e);
         }
     }
@@ -197,23 +204,23 @@
 
 <div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8">{resources.lobby.title}</h1>
+        <h1 class="text-4xl font-bold mb-8">{resources.ui.lobby.title}</h1>
 
         <!-- Create Lobby -->
         <div class="mb-8">
-            <h2 class="text-2xl font-bold mb-4">{resources.lobby.createNew}</h2>
+            <h2 class="text-2xl font-bold mb-4">{resources.ui.lobby.createNew}</h2>
             <div class="flex gap-4">
                 <input
                     type="text"
                     bind:value={newLobbyName}
-                    placeholder={resources.lobby.nameInput.placeholder}
+                    placeholder={resources.ui.lobby.nameInput.placeholder}
                     class="flex-1 px-4 py-2 border-2 border-white/20 rounded bg-white/10 text-white text-base transition-colors focus:outline-none focus:border-[#4CAF50] placeholder-white/50"
                 />
                 <button
                     on:click={createLobby}
                     class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                 >
-                    {resources.common.buttons.create}
+                    {resources.ui.buttons.create}
                 </button>
             </div>
         </div>
@@ -228,21 +235,21 @@
                                 {index + 1}
                             </div>
                             <div class="flex-1 text-center">
-                                <h3 class="text-xl font-bold mb-2">{resources.common.labels.confirmDelete}</h3>
-                                <p class="text-white/70">{resources.common.labels.confirmDeleteMessage}</p>
+                                <h3 class="text-xl font-bold mb-2">{resources.ui.labels.confirmDelete}</h3>
+                                <p class="text-white/70">{resources.ui.labels.confirmDeleteMessage}</p>
                             </div>
                             <div class="w-48 flex justify-end gap-2">
                                 <button
                                     on:click={cancelDelete}
                                     class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                                 >
-                                    {resources.common.buttons.cancel}
+                                    {resources.ui.buttons.cancel}
                                 </button>
                                 <button
                                     on:click={deleteLobby}
                                     class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                 >
-                                    {resources.common.buttons.delete}
+                                    {resources.ui.buttons.delete}
                                 </button>
                             </div>
                         </div>
@@ -256,9 +263,9 @@
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold">{lobby.name}</h3>
                                 <p class="text-white/70">
-                                    {resources.common.labels.host}: {lobby.host}
+                                    {resources.ui.labels.host}: {lobby.host}
                                     {#if isHost(lobby)}
-                                        <span class="text-[#4CAF50] ml-2">({resources.common.labels.you})</span>
+                                        <span class="text-[#4CAF50] ml-2">({resources.ui.labels.you})</span>
                                     {/if}
                                 </p>
                                 <div class="text-sm text-white/50 mt-1">
@@ -277,44 +284,44 @@
                                             on:click={() => startGame(lobby.id)}
                                             class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                                         >
-                                            {resources.common.buttons.start}
+                                            {resources.ui.buttons.start}
                                         </button>
                                     {/if}
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        {resources.common.buttons.delete}
+                                        {resources.ui.buttons.delete}
                                     </button>
                                 {:else if isJoined(lobby)}
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        {resources.common.buttons.leave}
+                                        {resources.ui.buttons.leave}
                                     </button>
                                 {:else if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
                                     <span class="px-4 py-2 bg-gray-500 text-white rounded">
-                                        {resources.common.labels.full}
+                                        {resources.ui.labels.full}
                                     </span>
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        {resources.common.buttons.delete}
+                                        {resources.ui.buttons.delete}
                                     </button>
                                 {:else}
                                     <button
                                         on:click={() => joinLobby(lobby.id)}
                                         class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                                     >
-                                        {resources.common.buttons.join}
+                                        {resources.ui.buttons.join}
                                     </button>
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        {resources.common.buttons.delete}
+                                        {resources.ui.buttons.delete}
                                     </button>
                                 {/if}
                             </div>
@@ -332,7 +339,7 @@
                     on:click={() => error = null}
                     class="text-white hover:text-white/80"
                 >
-                    {resources.common.errors.closeButton}
+                    {resources.errors.common.closeButton}
                 </button>
             </div>
         {/if}

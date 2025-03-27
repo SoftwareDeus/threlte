@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { GameState } from '$lib/types';
-import { ChessColor } from '$lib/types';
+import type { GameState } from '$lib/types/chess';
+import { ChessColor } from '$lib/types/chess';
 import { getGameState, updateGameState } from '$lib/scripts/serverGameState';
 import { getLobbies } from '$lib/scripts/lobbyStore';
 import { resources } from '$lib/resources';
@@ -11,7 +11,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
     const { playerName, move } = await request.json();
 
     if (!playerName || !move) {
-        return json({ error: resources.common.errors.missingRequiredFields }, { status: 400 });
+        return json({ error: resources.errors.server.validation.missingRequiredFields }, { status: 400 });
     }
 
     // Get current game state
@@ -22,7 +22,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
     const lobby = lobbies.find(l => l.id === lobbyId);
     
     if (!lobby) {
-        return json({ error: resources.common.errors.lobbyNotFound }, { status: 404 });
+        return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
     }
 
     // Determine player's color from lobby
@@ -33,22 +33,22 @@ export const POST: RequestHandler = async ({ params, request }) => {
                        null;
 
     if (!playerColor) {
-        return json({ error: resources.common.errors.playerNotFound }, { status: 400 });
+        return json({ error: resources.errors.server.validation.playerNotFound }, { status: 400 });
     }
 
     if (currentState.activePlayer !== playerColor) {
-        return json({ error: resources.common.errors.notYourTurn }, { status: 400 });
+        return json({ error: resources.errors.server.validation.notYourTurn }, { status: 400 });
     }
 
     // Find the piece being moved
     const piece = currentState.pieces.find(p => p.id === move.pieceId);
     if (!piece) {
-        return json({ error: resources.common.errors.pieceNotFound }, { status: 400 });
+        return json({ error: resources.errors.server.validation.pieceNotFound }, { status: 400 });
     }
 
     // Check if the piece belongs to the player
     if (piece.color !== playerColor) {
-        return json({ error: resources.common.errors.cannotMoveOpponent }, { status: 400 });
+        return json({ error: resources.errors.server.validation.cannotMoveOpponent }, { status: 400 });
     }
 
     // TODO: Implement move validation and execution

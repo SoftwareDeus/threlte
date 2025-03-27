@@ -14,9 +14,9 @@
 	let selectedPiece: ChessPiece | null = null;
 	let validMoves: [number, number][] = [];
 	let threatFields: [number, number][] = [];
-	let tileSize: number = resources.constants.board.tileSize;
-	let width: number = resources.constants.board.width;
-	let depth: number = resources.constants.board.depth;
+	let tileSize: number = resources.config.board.tileSize;
+	let width: number = resources.config.board.width;
+	let depth: number = resources.config.board.depth;
 
 	let pieces: ChessPiece[] = [];
 	let activePlayer: ChessColor = ChessColor.White;
@@ -27,14 +27,14 @@
 	function chessToNumeric(position: string): [number, number] {
 		const [file, rank] = position.split('');
 		const x = file.charCodeAt(0) - 'a'.charCodeAt(0);
-		const y = resources.constants.board.width - parseInt(rank);
+		const y = resources.config.board.width - parseInt(rank);
 		return [x, y];
 	}
 
 	// Convert numeric coordinates to chess notation
 	function numericToChess(x: number, y: number): string {
 		const file = String.fromCharCode('a'.charCodeAt(0) + x);
-		const rank = resources.constants.board.width - y;
+		const rank = resources.config.board.width - y;
 		return `${file}${rank}`;
 	}
 
@@ -70,7 +70,7 @@
 
 	// Subscribe to game state
 	gameState.subscribe((state) => {
-		pieces = state.board;
+		pieces = state.pieces;
 		activePlayer = state.activePlayer;
 		updatePiecesWithMoves();
 	});
@@ -187,7 +187,7 @@
 			color={piece.color}
 			position={[
 				x * tileSize - (width * tileSize) / 2 + tileSize / 2,
-				resources.constants.board.pieceHeight,
+				resources.config.board.pieceHeight,
 				y * tileSize - (depth * tileSize) / 2 + tileSize / 2
 			]}
 			isSelected={selectedPiece?.position === piece.position}

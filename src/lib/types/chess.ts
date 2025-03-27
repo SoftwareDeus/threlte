@@ -1,7 +1,10 @@
 export enum ChessColor {
     White = 'white',
-    Black = 'black'
+    Black = 'black',
+    Random = 'random'
 }
+
+export type ColorSelection = ChessColor;
 
 export enum ChessPieceType {
     Pawn = 'pawn',
@@ -45,4 +48,27 @@ export interface GameState {
     };
     gameOver?: boolean;
     winner?: ChessColor;
+}
+
+export interface ChessPieceData {
+    id: string;
+    type: ChessPieceType;
+    position: [number, number, number];
+    color: ChessColor;
+}
+
+export interface Lobby {
+    id: string;
+    name: string;
+    host: string;
+    status: 'waiting' | 'playing';
+    created: Date;
+    slots: {
+        slot1?: { player: string; color?: ColorSelection };
+        slot2?: { player: string; color?: ColorSelection };
+    };
+    timeControl?: {
+        minutes: number;
+        increment: number;
+    };
 } 

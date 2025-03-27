@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
     const currentState = getGameState(lobbyId);
 
     // Find the piece being moved
-    const piece = currentState.board.find(p => p.position === move.pieceId);
+    const piece = currentState.pieces.find(p => p.position === move.pieceId);
     if (!piece) {
         return json({ error: 'Piece not found' }, { status: 400 });
     }
@@ -66,13 +66,13 @@ export const POST: RequestHandler = async ({ params, request }) => {
     }
 
     // Check if target position is occupied by a piece of the same color
-    const targetPiece = currentState.board.find(p => p.position === move.targetPosition);
+    const targetPiece = currentState.pieces.find(p => p.position === move.targetPosition);
     if (targetPiece && targetPiece.color === piece.color) {
         return json({ error: 'Cannot capture your own piece' }, { status: 400 });
     }
 
     // Update the board
-    const newBoard = currentState.board
+    const newPieces = currentState.pieces
         .filter(p => p.position !== move.targetPosition) // Remove captured piece if any
         .map(p => {
             if (p.position === move.pieceId) {
@@ -94,7 +94,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
     // Create new game state
     const newState: GameState = {
         ...currentState,
-        board: newBoard,
+        pieces: newPieces,
         capturedPieces: newCapturedPieces,
         activePlayer: currentState.activePlayer === ChessColor.White ? ChessColor.Black : ChessColor.White,
         lastMove: move

@@ -1,4 +1,4 @@
-import type { GameState } from '../types/chess';
+import type { GameState, ChessPiece } from '../types/chess';
 import { ChessColor, ChessPieceType } from '../types/chess';
 
 // Store game states for each lobby
@@ -6,18 +6,20 @@ const gameStates = new Map<string, GameState>();
 
 // Create initial game state for a lobby
 function getInitialState(lobbyId: string, timeControl?: { minutes: number; increment: number }): GameState {
-    // Initialize the board with pieces in their starting positions
-    const board = [];
+    // Initialize the pieces in their starting positions
+    const pieces: ChessPiece[] = [];
     const rows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
     
     // Add pawns
     for (let i = 0; i < 8; i++) {
-        board.push({
+        pieces.push({
+            id: `white-pawn-${i}`,
             type: ChessPieceType.Pawn,
             color: ChessColor.White,
             position: `${rows[i]}2`
         });
-        board.push({
+        pieces.push({
+            id: `black-pawn-${i}`,
             type: ChessPieceType.Pawn,
             color: ChessColor.Black,
             position: `${rows[i]}7`
@@ -37,12 +39,14 @@ function getInitialState(lobbyId: string, timeControl?: { minutes: number; incre
     ];
 
     for (let i = 0; i < 8; i++) {
-        board.push({
+        pieces.push({
+            id: `white-${backRowPieces[i]}-${i}`,
             type: backRowPieces[i],
             color: ChessColor.White,
             position: `${rows[i]}1`
         });
-        board.push({
+        pieces.push({
+            id: `black-${backRowPieces[i]}-${i}`,
             type: backRowPieces[i],
             color: ChessColor.Black,
             position: `${rows[i]}8`
@@ -53,7 +57,7 @@ function getInitialState(lobbyId: string, timeControl?: { minutes: number; incre
     const seconds = minutes * 60;
 
     return {
-        board,
+        pieces,
         activePlayer: ChessColor.White,
         capturedPieces: {
             white: [],

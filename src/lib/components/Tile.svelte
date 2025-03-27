@@ -27,10 +27,10 @@
 	<T.PlaneGeometry args={[tileSize, tileSize]} />
 	<T.MeshStandardMaterial
 		color={
-			isValidMove ? resources.colors.board.validMove : 
-			isUnderAttackField ? resources.colors.board.underAttack : 
-			hasPieceWithValidMove ? resources.colors.board.possibleMove :
-			(x + y) % 2 === 0 ? resources.colors.board.white : resources.colors.board.black
+			isValidMove ? resources.config.colors.board.validMove : 
+			isUnderAttackField ? resources.config.colors.board.underAttack : 
+			hasPieceWithValidMove ? resources.config.colors.board.possibleMove :
+			(x + y) % 2 === 0 ? resources.config.colors.board.white : resources.config.colors.board.black
 		}
 	/>
 </T.Mesh>

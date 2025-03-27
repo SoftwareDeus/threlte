@@ -21,29 +21,29 @@
 			if (!response.ok) {
 				const data = await response.json();
 				if (data.error === 'Game not found or not started') {
-					error = resources.chess.game.gameOver;
+					error = resources.errors.server.validation.gameNotFound;
 					setTimeout(() => goto('/lobby'), 2000);
 					return;
 				}
-				throw new Error(data.error || resources.common.errors.fetchFailed);
+				throw new Error(data.error || resources.errors.common.fetchFailed);
 			}
 			const serverState = await response.json();
 			gameState.set(serverState);
 		} catch (e) {
-			console.error(resources.common.errors.fetchFailed, e);
-			error = e instanceof Error ? e.message : resources.common.errors.fetchFailed;
+			console.error(resources.errors.common.fetchFailed, e);
+			error = e instanceof Error ? e.message : resources.errors.common.fetchFailed;
 		}
 	}
 
 	onMount(async () => {
 		if (!$playerName) {
-			error = resources.common.errors.nameRequired;
+			error = resources.errors.common.nameRequired;
 			setTimeout(() => goto('/'), 2000);
 			return;
 		}
 
 		if (!$lobbyId) {
-			error = resources.common.errors.fetchFailed;
+			error = resources.errors.common.fetchFailed;
 			setTimeout(() => goto('/lobby'), 2000);
 			return;
 		}
@@ -76,7 +76,7 @@
 				on:click={() => error = null}
 				class="text-white hover:text-white/80"
 			>
-				{resources.common.errors.closeButton}
+				{resources.errors.common.closeButton}
 			</button>
 		</div>
 	{/if}
