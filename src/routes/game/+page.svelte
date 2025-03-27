@@ -19,6 +19,11 @@
 			const response = await fetch(`/api/game/${$lobbyId}`);
 			if (!response.ok) {
 				const data = await response.json();
+				if (data.error === 'Game not found or not started') {
+					error = 'Game has ended';
+					setTimeout(() => goto('/lobby'), 2000);
+					return;
+				}
 				throw new Error(data.error || 'Failed to fetch game state');
 			}
 			const serverState = await response.json();
