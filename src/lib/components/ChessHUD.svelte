@@ -8,8 +8,8 @@
 	import { goto } from "$app/navigation";
 	import { resources } from '$lib/resources';
 
-	let whiteTime = 600;
-	let blackTime = 600;
+	let whiteTime = resources.constants.time.defaultMinutes * 60;
+	let blackTime = resources.constants.time.defaultMinutes * 60;
 	let whiteCaptured = 0;
 	let blackCaptured = 0;
 	let whitePlayer = "";

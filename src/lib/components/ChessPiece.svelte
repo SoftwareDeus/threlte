@@ -17,47 +17,78 @@
 
 <T.Group
 	position={position}
-	scale={isUnderAttack ? [1.3, 1.3, 1.3] : isSelected ? [1.2, 1.2, 1.2] : [1, 1, 1]}
+	scale={isUnderAttack ? 
+		[resources.constants.board.pieceScale.underAttack, resources.constants.board.pieceScale.underAttack, resources.constants.board.pieceScale.underAttack] : 
+		isSelected ? 
+		[resources.constants.board.pieceScale.selected, resources.constants.board.pieceScale.selected, resources.constants.board.pieceScale.selected] : 
+		[resources.constants.board.pieceScale.normal, resources.constants.board.pieceScale.normal, resources.constants.board.pieceScale.normal]}
 	onclick={onclickDelegate}
 >
 {#if type === "pawn"}
 	<T.Mesh>
-		<T.CylinderGeometry args={[0.2, 0.2, 1, 32]} />
+		<T.CylinderGeometry args={[
+			resources.constants.pieces.pawn.radius,
+			resources.constants.pieces.pawn.radius,
+			resources.constants.pieces.pawn.height,
+			resources.constants.pieces.pawn.segments
+		]} />
 		<T.MeshStandardMaterial 
 			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "rook"}
 	<T.Mesh>
-		<T.BoxGeometry args={[0.5, 1, 0.5]} />
+		<T.BoxGeometry args={[
+			resources.constants.pieces.rook.width,
+			resources.constants.pieces.rook.height,
+			resources.constants.pieces.rook.depth
+		]} />
 		<T.MeshStandardMaterial 
 			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "knight"}
 	<T.Mesh>
-		<T.ConeGeometry args={[0.4, 1, 8]} />
+		<T.ConeGeometry args={[
+			resources.constants.pieces.knight.radius,
+			resources.constants.pieces.knight.height,
+			resources.constants.pieces.knight.segments
+		]} />
 		<T.MeshStandardMaterial 
 			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "bishop"}
 	<T.Mesh>
-		<T.SphereGeometry args={[0.5, 32, 32]} />
+		<T.SphereGeometry args={[
+			resources.constants.pieces.bishop.radius,
+			resources.constants.pieces.bishop.segments,
+			resources.constants.pieces.bishop.segments
+		]} />
 		<T.MeshStandardMaterial 
 			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "queen"}
 	<T.Mesh>
-		<T.CylinderGeometry args={[0.3, 0.5, 1.5, 32]} />
+		<T.CylinderGeometry args={[
+			resources.constants.pieces.queen.topRadius,
+			resources.constants.pieces.queen.bottomRadius,
+			resources.constants.pieces.queen.height,
+			resources.constants.pieces.queen.segments
+		]} />
 		<T.MeshStandardMaterial 
 			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
 	</T.Mesh>
 {:else if type === "king"}
 	<T.Mesh>
-		<T.CylinderGeometry args={[0.35, 0.55, 1.8, 32]} />
+		<T.CylinderGeometry args={[
+			resources.constants.pieces.king.topRadius,
+			resources.constants.pieces.king.bottomRadius,
+			resources.constants.pieces.king.height,
+			resources.constants.pieces.king.segments
+		]} />
 		<T.MeshStandardMaterial 
 			color={isUnderAttack ? resources.colors.pieces.underAttack : isSelected ? resources.colors.pieces.selected : hasPossibleMove ? resources.colors.pieces.possibleMove : color} 
 		/>
