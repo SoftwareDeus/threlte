@@ -3,6 +3,7 @@
 	import { T } from "@threlte/core";
 	import { gameState } from "$lib/stores/gameStore";
 	import { lobbyId } from "$lib/stores/lobbyStore";
+	import { playerName } from "$lib/stores/playerStore";
 	import { ChessColor } from "$lib/types/chess";
 
 	let whiteTime = 600;
@@ -12,10 +13,12 @@
 	let whitePlayer = "";
 	let blackPlayer = "";
 	let lobbyInterval: number;
+	let currentPlayerColor: ChessColor = ChessColor.White;
 
 	gameState.subscribe((state) => {
 		whiteCaptured = state.capturedPieces.white.length;
 		blackCaptured = state.capturedPieces.black.length;
+		currentPlayerColor = state.activePlayer;
 	});
 
 	async function getPlayerInfo() {
@@ -53,17 +56,31 @@
 
 	$: whiteTimeDisplay = formatTime(whiteTime);
 	$: blackTimeDisplay = formatTime(blackTime);
+	$: isWhitePlayer = whitePlayer === $playerName;
+	$: isBlackPlayer = blackPlayer === $playerName;
+	$: isWhiteTurn = currentPlayerColor === ChessColor.White;
+	$: isBlackTurn = currentPlayerColor === ChessColor.Black;
 </script>
 
 <div class="hud">
 	<div class="player-info">
-		<div class="player white">
-			<span class="name">{whitePlayer}</span>
+		<div class="player white {isWhiteTurn ? 'active' : ''}">
+			<span class="name">
+				{whitePlayer}
+				{#if isWhitePlayer}
+					<span class="you">(you)</span>
+				{/if}
+			</span>
 			<span class="time">{whiteTimeDisplay}</span>
 			<span class="captured">Captured: {whiteCaptured}</span>
 		</div>
-		<div class="player black">
-			<span class="name">{blackPlayer}</span>
+		<div class="player black {isBlackTurn ? 'active' : ''}">
+			<span class="name">
+				{#if isBlackPlayer}
+					<span class="you">(you)</span>
+				{/if}
+				{blackPlayer}
+			</span>
 			<span class="time">{blackTimeDisplay}</span>
 			<span class="captured">Captured: {blackCaptured}</span>
 		</div>
@@ -96,6 +113,12 @@
 		display: flex;
 		flex-direction: column;
 		gap: 5px;
+		padding: 5px 10px;
+		border-radius: 4px;
+	}
+
+	.player.active {
+		background: rgba(76, 175, 80, 0.2);
 	}
 
 	.player.white {
@@ -103,12 +126,21 @@
 	}
 
 	.player.black {
-		text-align: right;
+		text-align: left;
 	}
 
 	.name {
 		font-size: 1.2em;
 		font-weight: bold;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+
+	.you {
+		font-size: 0.8em;
+		color: #4CAF50;
+		font-weight: normal;
 	}
 
 	.time {
