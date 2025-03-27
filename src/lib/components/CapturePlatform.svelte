@@ -3,14 +3,15 @@
 	import { gameState } from "$lib/stores/gameStore";
 	import ChessPieceComponent from "./ChessPiece.svelte";
 	import { resources } from "$lib/resources";
+	import { ChessColor } from "$lib/types/chess";
 
-	export let color: 'white' | 'black';
+	export let color: ChessColor;
 
 	$: capturedPieces = $gameState.capturedPieces[color];
 
 	$: platformX = 0;
 	$: platformY = 0.05;
-	$: platformZ = color === 'white' ? resources.constants.capturePlatform.whiteZ : resources.constants.capturePlatform.blackZ;
+	$: platformZ = color === ChessColor.White ? resources.constants.capturePlatform.whiteZ : resources.constants.capturePlatform.blackZ;
 
 	function handlePieceClick() {
 		return;

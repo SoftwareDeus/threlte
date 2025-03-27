@@ -4,6 +4,7 @@
     import { playerName } from '$lib/stores/playerStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
+    import { ChessColor } from '$lib/types/chess';
 
     interface Lobby {
         id: string;
@@ -14,11 +15,11 @@
         slots: {
             slot1?: {
                 player?: string;
-                color: 'white' | 'black';
+                color: ChessColor;
             };
             slot2?: {
                 player?: string;
-                color: 'white' | 'black';
+                color: ChessColor;
             };
         };
         timeControl?: {

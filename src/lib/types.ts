@@ -44,11 +44,11 @@ export interface Lobby {
 	slots: {
 		slot1?: {
 			player?: string;
-			color: 'white' | 'black';
+			color: ChessColor;
 		};
 		slot2?: {
 			player?: string;
-			color: 'white' | 'black';
+			color: ChessColor;
 		};
 	};
 	timeControl?: {
