@@ -2,9 +2,10 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { Lobby } from '$lib/types';
 import { getLobbies, updateLobby } from '$lib/scripts/lobbyStore';
+import { getGameState, updateGameState } from '$lib/scripts/serverGameState';
 
 export const POST: RequestHandler = async ({ params, request }) => {
-    const { playerName } = await request.json();
+    const { playerName, timeControl } = await request.json();
     const lobbyId = params.id;
 
     if (!playerName) {
@@ -24,18 +25,30 @@ export const POST: RequestHandler = async ({ params, request }) => {
     }
 
     // Can't start without a second player
-    if (!lobby.players.black) {
+    if (!lobby.slots.slot1?.player || !lobby.slots.slot2?.player) {
         return json({ error: 'Cannot start game without a second player' }, { status: 400 });
     }
 
     // Create updated lobby with game started
     const updatedLobby: Lobby = {
         ...lobby,
-        status: 'playing'
+        status: 'playing',
+        timeControl
     };
 
     // Update the lobby
     updateLobby(lobbyId, updatedLobby);
+
+    // Initialize game state with time control
+    const gameState = getGameState(lobbyId);
+    updateGameState(lobbyId, {
+        ...gameState,
+        timeControl,
+        timeRemaining: {
+            white: timeControl.minutes * 60,
+            black: timeControl.minutes * 60
+        }
+    });
 
     return json(updatedLobby);
 }; 

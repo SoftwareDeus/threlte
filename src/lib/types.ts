@@ -41,8 +41,18 @@ export interface Lobby {
 	host: string;
 	status: 'waiting' | 'playing';
 	created: Date;
-	players: {
-		white?: string;
-		black?: string;
+	slots: {
+		slot1?: {
+			player?: string;
+			color: 'white' | 'black';
+		};
+		slot2?: {
+			player?: string;
+			color: 'white' | 'black';
+		};
+	};
+	timeControl?: {
+		minutes: number;
+		increment: number;
 	};
 }

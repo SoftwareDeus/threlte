@@ -34,4 +34,12 @@ export interface GameState {
     reset: () => void;
     lastMove?: Move;
     playerName?: string;
+    timeControl?: {
+        minutes: number;
+        increment: number;
+    };
+    timeRemaining?: {
+        white: number;
+        black: number;
+    };
 } 

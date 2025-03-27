@@ -11,15 +11,29 @@
         host: string;
         status: 'waiting' | 'playing';
         created: Date;
-        players: {
-            white?: string;
-            black?: string;
+        slots: {
+            slot1?: {
+                player?: string;
+                color: 'white' | 'black';
+            };
+            slot2?: {
+                player?: string;
+                color: 'white' | 'black';
+            };
+        };
+        timeControl?: {
+            minutes: number;
+            increment: number;
         };
     }
 
     let lobby: Lobby | null = null;
     let error: string | null = null;
     let interval: number;
+    let timeControl = {
+        minutes: 10,
+        increment: 0
+    };
 
     onMount(() => {
         if (!$playerName) {
@@ -70,7 +84,8 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    playerName: $playerName
+                    playerName: $playerName,
+                    timeControl
                 })
             });
 
@@ -83,6 +98,62 @@
             goto('/game');
         } catch (e) {
             error = 'Failed to start game';
+            console.error(e);
+        }
+    }
+
+    async function randomizePlayers() {
+        if (!$playerName || !lobby) return;
+
+        try {
+            const response = await fetch(`/api/lobbies/${lobby.id}/randomize`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    playerName: $playerName
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to randomize players');
+            }
+
+            const updatedLobby = await response.json();
+            lobby = updatedLobby;
+        } catch (e) {
+            error = 'Failed to randomize players';
+            console.error(e);
+        }
+    }
+
+    async function setPlayerColor(color: 'white' | 'black', event: Event) {
+        if (!$playerName || !lobby) return;
+        const select = event.target as HTMLSelectElement;
+        const targetPlayer = select.value;
+
+        try {
+            const response = await fetch(`/api/lobbies/${lobby.id}/set-color`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    playerName: $playerName,
+                    targetPlayer,
+                    color
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to set player color');
+            }
+
+            const updatedLobby = await response.json();
+            lobby = updatedLobby;
+        } catch (e) {
+            error = 'Failed to set player color';
             console.error(e);
         }
     }
@@ -117,7 +188,7 @@
     }
 
     function isFull(): boolean {
-        return !!lobby?.players.white && !!lobby?.players.black;
+        return !!lobby?.slots.slot1?.player && !!lobby?.slots.slot2?.player;
     }
 </script>
 
@@ -139,25 +210,97 @@
                     <h2 class="text-2xl font-bold mb-4">Players</h2>
                     <div class="space-y-4">
                         <div class="flex items-center justify-between p-4 bg-white/5 rounded">
-                            <div>
-                                <span class="text-lg font-bold">White (Host)</span>
-                                <p class="text-white/70">{lobby.players.white}</p>
+                            <div class="flex items-center gap-4">
+                                <div>
+                                    <span class="text-lg font-bold">Slot 1 ({lobby.slots.slot1?.color || 'White'})</span>
+                                    <p class="text-white/70">{lobby.slots.slot1?.player || 'Waiting for player...'}</p>
+                                </div>
+                                {#if isHost()}
+                                    <select
+                                        class="px-2 py-1 bg-[#1a1a1a] border border-white/20 rounded text-white"
+                                        value={lobby.slots.slot1?.player || ''}
+                                        on:change={(e) => setPlayerColor('white', e)}
+                                    >
+                                        <option value="">Waiting for player...</option>
+                                        {#if lobby.slots.slot1?.player}
+                                            <option value={lobby.slots.slot1.player}>White</option>
+                                        {/if}
+                                        {#if lobby.slots.slot2?.player}
+                                            <option value={lobby.slots.slot2.player}>Black</option>
+                                        {/if}
+                                    </select>
+                                {/if}
                             </div>
-                            {#if lobby.players.white === $playerName}
+                            {#if lobby.slots.slot1?.player === $playerName}
                                 <span class="px-3 py-1 bg-[#4CAF50] text-white rounded text-sm">You</span>
                             {/if}
                         </div>
                         <div class="flex items-center justify-between p-4 bg-white/5 rounded">
-                            <div>
-                                <span class="text-lg font-bold">Black</span>
-                                <p class="text-white/70">{lobby.players.black || 'Waiting for player...'}</p>
+                            <div class="flex items-center gap-4">
+                                <div>
+                                    <span class="text-lg font-bold">Slot 2 ({lobby.slots.slot2?.color || 'Black'})</span>
+                                    <p class="text-white/70">{lobby.slots.slot2?.player || 'Waiting for player...'}</p>
+                                </div>
+                                {#if isHost()}
+                                    <select
+                                        class="px-2 py-1 bg-[#1a1a1a] border border-white/20 rounded text-white"
+                                        value={lobby.slots.slot2?.player || ''}
+                                        on:change={(e) => setPlayerColor('black', e)}
+                                    >
+                                        <option value="">Waiting for player...</option>
+                                        {#if lobby.slots.slot1?.player}
+                                            <option value={lobby.slots.slot1.player}>White</option>
+                                        {/if}
+                                        {#if lobby.slots.slot2?.player}
+                                            <option value={lobby.slots.slot2.player}>Black</option>
+                                        {/if}
+                                    </select>
+                                {/if}
                             </div>
-                            {#if lobby.players.black === $playerName}
+                            {#if lobby.slots.slot2?.player === $playerName}
                                 <span class="px-3 py-1 bg-[#4CAF50] text-white rounded text-sm">You</span>
                             {/if}
                         </div>
                     </div>
+                    {#if isHost() && isFull()}
+                        <div class="mt-4 flex gap-4">
+                            <button
+                                on:click={randomizePlayers}
+                                class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            >
+                                Randomize Colors
+                            </button>
+                        </div>
+                    {/if}
                 </div>
+
+                {#if isHost()}
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold mb-4">Time Control</h2>
+                        <div class="space-y-4 bg-white/5 rounded p-4">
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">Minutes per player:</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="60"
+                                    bind:value={timeControl.minutes}
+                                    class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
+                                />
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">Increment (seconds):</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="60"
+                                    bind:value={timeControl.increment}
+                                    class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                {/if}
 
                 <div class="flex justify-end gap-4">
                     {#if isHost()}

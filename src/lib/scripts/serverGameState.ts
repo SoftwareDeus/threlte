@@ -5,7 +5,7 @@ import { ChessColor, ChessPieceType } from '../types/chess';
 const gameStates = new Map<string, GameState>();
 
 // Create initial game state for a lobby
-function getInitialState(lobbyId: string): GameState {
+function getInitialState(lobbyId: string, timeControl?: { minutes: number; increment: number }): GameState {
     // Initialize the board with pieces in their starting positions
     const board = [];
     const rows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -49,6 +49,9 @@ function getInitialState(lobbyId: string): GameState {
         });
     }
 
+    const minutes = timeControl?.minutes || 10;
+    const seconds = minutes * 60;
+
     return {
         board,
         activePlayer: ChessColor.White,
@@ -57,8 +60,13 @@ function getInitialState(lobbyId: string): GameState {
             black: []
         },
         status: null,
+        timeControl: timeControl || { minutes: 10, increment: 0 },
+        timeRemaining: {
+            white: seconds,
+            black: seconds
+        },
         reset: () => {
-            gameStates.set(lobbyId, getInitialState(lobbyId));
+            gameStates.set(lobbyId, getInitialState(lobbyId, timeControl));
         }
     };
 }

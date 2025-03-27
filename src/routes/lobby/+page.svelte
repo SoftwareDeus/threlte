@@ -10,9 +10,19 @@
         host: string;
         status: 'waiting' | 'playing';
         created: Date;
-        players: {
-            white?: string;
-            black?: string;
+        slots: {
+            slot1?: {
+                player?: string;
+                color: 'white' | 'black';
+            };
+            slot2?: {
+                player?: string;
+                color: 'white' | 'black';
+            };
+        };
+        timeControl?: {
+            minutes: number;
+            increment: number;
         };
     }
 
@@ -175,11 +185,11 @@
     }
 
     function isHost(lobby: Lobby): boolean {
-        return lobby.players.white === $playerName;
+        return lobby.host === $playerName;
     }
 
     function isJoined(lobby: Lobby): boolean {
-        return lobby.players.white === $playerName || lobby.players.black === $playerName;
+        return lobby.slots?.slot1?.player === $playerName || lobby.slots?.slot2?.player === $playerName;
     }
 </script>
 
@@ -244,9 +254,9 @@
                             <div class="flex-1 flex items-center justify-center gap-16">
                                 <h3 class="text-2xl font-bold">{lobby.name}</h3>
                                 <div class="text-sm text-white/70">
-                                    Host: {lobby.players.white || 'Waiting...'}
+                                    Host: {lobby.slots?.slot1?.player || 'Waiting...'}
                                     <br>
-                                    Player: {lobby.players.black || 'Waiting...'}
+                                    Player: {lobby.slots?.slot2?.player || 'Waiting...'}
                                 </div>
                             </div>
                             <div class="w-48 flex justify-end gap-2">
@@ -273,7 +283,7 @@
                                     >
                                         Delete
                                     </button>
-                                {:else if lobby.players.white && lobby.players.black}
+                                {:else if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
                                     <span class="px-4 py-2 bg-gray-500 text-white rounded">
                                         Full
                                     </span>

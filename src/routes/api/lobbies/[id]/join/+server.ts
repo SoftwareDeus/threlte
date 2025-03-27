@@ -18,32 +18,27 @@ export const POST: RequestHandler = async ({ params, request }) => {
         return json({ error: 'Lobby not found' }, { status: 404 });
     }
 
-    // Check if lobby is already in game
+    // Can't join if already in the lobby
+    if (lobby.slots.slot1?.player === playerName || lobby.slots.slot2?.player === playerName) {
+        return json({ error: 'Already in this lobby' }, { status: 400 });
+    }
+
+    // Can't join if lobby is full
+    if (lobby.slots.slot1?.player && lobby.slots.slot2?.player) {
+        return json({ error: 'Lobby is full' }, { status: 400 });
+    }
+
+    // Can't join if game has started
     if (lobby.status === 'playing') {
-        return json({ error: 'Lobby is already in game' }, { status: 400 });
+        return json({ error: 'Game has already started' }, { status: 400 });
     }
 
-    // Check if player is already in the lobby
-    if (lobby.players.white === playerName || lobby.players.black === playerName) {
-        return json({ error: 'Player is already in this lobby' }, { status: 400 });
-    }
-
-    // If the player is the host, they can't join as black
-    if (lobby.host === playerName) {
-        return json({ error: 'Host cannot join as black' }, { status: 400 });
-    }
-
-    // If someone has already joined as black, the lobby is full
-    if (lobby.players.black) {
-        return json({ error: 'Lobby is already full' }, { status: 400 });
-    }
-
-    // Create updated lobby with new player
+    // Fill the empty slot
     const updatedLobby: Lobby = {
         ...lobby,
-        players: {
-            ...lobby.players,
-            black: playerName
+        slots: {
+            slot1: lobby.slots.slot1?.player ? lobby.slots.slot1 : { player: playerName, color: lobby.slots.slot1?.color || 'white' },
+            slot2: lobby.slots.slot2?.player ? lobby.slots.slot2 : { player: playerName, color: lobby.slots.slot2?.color || 'black' }
         }
     };
 

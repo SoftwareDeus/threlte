@@ -14,11 +14,16 @@
 	let blackPlayer = "";
 	let lobbyInterval: number;
 	let currentPlayerColor: ChessColor = ChessColor.White;
+	let timeInterval: number;
 
 	gameState.subscribe((state) => {
 		whiteCaptured = state.capturedPieces.white.length;
 		blackCaptured = state.capturedPieces.black.length;
 		currentPlayerColor = state.activePlayer;
+		if (state.timeRemaining) {
+			whiteTime = state.timeRemaining.white;
+			blackTime = state.timeRemaining.black;
+		}
 	});
 
 	async function getPlayerInfo() {
@@ -40,13 +45,47 @@
 	onMount(() => {
 		getPlayerInfo();
 		lobbyInterval = setInterval(getPlayerInfo, 1000);
+		timeInterval = setInterval(updateTime, 1000);
 	});
 
 	onDestroy(() => {
 		if (lobbyInterval) {
 			clearInterval(lobbyInterval);
 		}
+		if (timeInterval) {
+			clearInterval(timeInterval);
+		}
 	});
+
+	async function updateTime() {
+		if (!$lobbyId || !currentPlayerColor) return;
+
+		try {
+			const response = await fetch(`/api/game/${$lobbyId}/time`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					playerName: $playerName,
+					color: currentPlayerColor
+				})
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || 'Failed to update time');
+			}
+
+			const state = await response.json();
+			if (state.timeRemaining) {
+				whiteTime = state.timeRemaining.white;
+				blackTime = state.timeRemaining.black;
+			}
+		} catch (error) {
+			console.error('Failed to update time:', error);
+		}
+	}
 
 	function formatTime(seconds: number): string {
 		const minutes = Math.floor(seconds / 60);
