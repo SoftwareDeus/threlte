@@ -260,15 +260,25 @@
                                         <span class="text-[#4CAF50] ml-2">({resources.common.labels.you})</span>
                                     {/if}
                                 </p>
+                                <div class="text-sm text-white/50 mt-1">
+                                    {#if lobby.slots.slot1?.player}
+                                        <span class="mr-2">Slot 1: {lobby.slots.slot1.player} ({lobby.slots.slot1.color})</span>
+                                    {/if}
+                                    {#if lobby.slots.slot2?.player}
+                                        <span>Slot 2: {lobby.slots.slot2.player} ({lobby.slots.slot2.color})</span>
+                                    {/if}
+                                </div>
                             </div>
                             <div class="w-48 flex justify-end gap-2">
                                 {#if isHost(lobby)}
-                                    <button
-                                        on:click={() => startGame(lobby.id)}
-                                        class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                                    >
-                                        {resources.common.buttons.start}
-                                    </button>
+                                    {#if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
+                                        <button
+                                            on:click={() => startGame(lobby.id)}
+                                            class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                                        >
+                                            {resources.common.buttons.start}
+                                        </button>
+                                    {/if}
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
@@ -276,9 +286,12 @@
                                         {resources.common.buttons.delete}
                                     </button>
                                 {:else if isJoined(lobby)}
-                                    <span class="px-4 py-2 bg-[#4CAF50] text-white rounded">
-                                        {resources.common.labels.joined}
-                                    </span>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        {resources.common.buttons.leave}
+                                    </button>
                                 {:else if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
                                     <span class="px-4 py-2 bg-gray-500 text-white rounded">
                                         {resources.common.labels.full}
@@ -289,6 +302,12 @@
                                         class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                                     >
                                         {resources.common.buttons.join}
+                                    </button>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        {resources.common.buttons.delete}
                                     </button>
                                 {/if}
                             </div>

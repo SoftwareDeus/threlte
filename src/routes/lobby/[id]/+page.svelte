@@ -253,91 +253,95 @@
                     <h2 class="text-2xl font-bold mb-4">{resources.lobby.players.title}</h2>
                     <div class="space-y-4">
                         <!-- Slot 1 -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <span class="text-lg">{resources.lobby.players.slot1}:</span>
-                                <span class="text-white/70">
-                                    {lobby.slots.slot1?.player || resources.lobby.players.waitingForPlayer}
-                                </span>
-                                {#if lobby.slots.slot1?.player === $playerName}
-                                    <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                        <div class="p-4 rounded-lg" style="background-color: {lobby.slots.slot1?.color === 'white' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)'}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-lg">{resources.lobby.players.slot1}:</span>
+                                    <span class="text-white/70">
+                                        {lobby.slots.slot1?.player || resources.lobby.players.waitingForPlayer}
+                                    </span>
+                                    {#if lobby.slots.slot1?.player === $playerName}
+                                        <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                                    {/if}
+                                </div>
+                                {#if isHost()}
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="slot1-color"
+                                                checked={lobby?.slots?.slot1?.color === 'white'}
+                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white')}
+                                            />
+                                            {resources.lobby.players.color.white}
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="slot1-color"
+                                                checked={lobby?.slots?.slot1?.color === 'black'}
+                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black')}
+                                            />
+                                            {resources.lobby.players.color.black}
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="slot1-color"
+                                                checked={lobby?.slots?.slot1?.color === 'random'}
+                                                on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
+                                            />
+                                            {resources.lobby.players.color.random}
+                                        </label>
+                                    </div>
                                 {/if}
                             </div>
-                            {#if isHost()}
-                                <div class="flex gap-4">
-                                    <label class="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="slot1-color"
-                                            checked={lobby?.slots?.slot1?.color === 'white'}
-                                            on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white')}
-                                        />
-                                        {resources.lobby.players.color.white}
-                                    </label>
-                                    <label class="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="slot1-color"
-                                            checked={lobby?.slots?.slot1?.color === 'black'}
-                                            on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black')}
-                                        />
-                                        {resources.lobby.players.color.black}
-                                    </label>
-                                    <label class="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="slot1-color"
-                                            checked={lobby?.slots?.slot1?.color === 'random'}
-                                            on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
-                                        />
-                                        {resources.lobby.players.color.random}
-                                    </label>
-                                </div>
-                            {/if}
                         </div>
 
                         <!-- Slot 2 -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <span class="text-lg">{resources.lobby.players.slot2}:</span>
-                                <span class="text-white/70">
-                                    {lobby.slots.slot2?.player || resources.lobby.players.waitingForPlayer}
-                                </span>
-                                {#if lobby.slots.slot2?.player === $playerName}
-                                    <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                        <div class="p-4 rounded-lg" style="background-color: {lobby.slots.slot2?.color === 'white' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)'}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-lg">{resources.lobby.players.slot2}:</span>
+                                    <span class="text-white/70">
+                                        {lobby.slots.slot2?.player || resources.lobby.players.waitingForPlayer}
+                                    </span>
+                                    {#if lobby.slots.slot2?.player === $playerName}
+                                        <span class="text-[#4CAF50]">({resources.common.labels.you})</span>
+                                    {/if}
+                                </div>
+                                {#if isHost()}
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="slot2-color"
+                                                checked={lobby?.slots?.slot2?.color === 'white'}
+                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white')}
+                                            />
+                                            {resources.lobby.players.color.white}
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="slot2-color"
+                                                checked={lobby?.slots?.slot2?.color === 'black'}
+                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black')}
+                                            />
+                                            {resources.lobby.players.color.black}
+                                        </label>
+                                        <label class="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                name="slot2-color"
+                                                checked={lobby?.slots?.slot2?.color === 'random'}
+                                                on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
+                                            />
+                                            {resources.lobby.players.color.random}
+                                        </label>
+                                    </div>
                                 {/if}
                             </div>
-                            {#if isHost()}
-                                <div class="flex gap-4">
-                                    <label class="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="slot2-color"
-                                            checked={lobby?.slots?.slot2?.color === 'white'}
-                                            on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white')}
-                                        />
-                                        {resources.lobby.players.color.white}
-                                    </label>
-                                    <label class="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="slot2-color"
-                                            checked={lobby?.slots?.slot2?.color === 'black'}
-                                            on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black')}
-                                        />
-                                        {resources.lobby.players.color.black}
-                                    </label>
-                                    <label class="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            name="slot2-color"
-                                            checked={lobby?.slots?.slot2?.color === 'random'}
-                                            on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
-                                        />
-                                        {resources.lobby.players.color.random}
-                                    </label>
-                                </div>
-                            {/if}
                         </div>
 
                         {#if isHost() && isFull()}
