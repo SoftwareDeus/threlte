@@ -253,7 +253,7 @@
                     <h2 class="text-2xl font-bold mb-4">{resources.lobby.players.title}</h2>
                     <div class="space-y-4">
                         <!-- Slot 1 -->
-                        <div class="p-4 rounded-lg" style="background-color: {lobby.slots.slot1?.color === 'white' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)'}">
+                        <div class="p-4 rounded-lg slot-bg" class:white-slot={lobby.slots.slot1?.color === 'white'} class:black-slot={lobby.slots.slot1?.color === 'black'}>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <span class="text-lg">{resources.lobby.players.slot1}:</span>
@@ -266,40 +266,49 @@
                                 </div>
                                 {#if isHost()}
                                     <div class="flex gap-4">
-                                        <label class="flex items-center gap-2">
+                                        <div class="flex items-center gap-2">
                                             <input
+                                                id="slot1-white"
                                                 type="radio"
                                                 name="slot1-color"
+                                                value="white"
                                                 checked={lobby?.slots?.slot1?.color === 'white'}
                                                 on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'white')}
+                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
                                             />
-                                            {resources.lobby.players.color.white}
-                                        </label>
-                                        <label class="flex items-center gap-2">
+                                            <label for="slot1-white" class="text-white">{resources.lobby.players.color.white}</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
                                             <input
+                                                id="slot1-black"
                                                 type="radio"
                                                 name="slot1-color"
+                                                value="black"
                                                 checked={lobby?.slots?.slot1?.color === 'black'}
                                                 on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'black')}
+                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
                                             />
-                                            {resources.lobby.players.color.black}
-                                        </label>
-                                        <label class="flex items-center gap-2">
+                                            <label for="slot1-black" class="text-white">{resources.lobby.players.color.black}</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
                                             <input
+                                                id="slot1-random"
                                                 type="radio"
                                                 name="slot1-color"
+                                                value="random"
                                                 checked={lobby?.slots?.slot1?.color === 'random'}
                                                 on:change={() => lobby?.slots?.slot1?.player && setPlayerColor(lobby.slots.slot1.player, 'random')}
+                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
                                             />
-                                            {resources.lobby.players.color.random}
-                                        </label>
+                                            <label for="slot1-random" class="text-white">{resources.lobby.players.color.random}</label>
+                                        </div>
                                     </div>
                                 {/if}
                             </div>
                         </div>
 
                         <!-- Slot 2 -->
-                        <div class="p-4 rounded-lg" style="background-color: {lobby.slots.slot2?.color === 'white' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.2)'}">
+                        <div class="p-4 rounded-lg slot-bg" class:white-slot={lobby.slots.slot2?.color === 'white'} class:black-slot={lobby.slots.slot2?.color === 'black'}>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <span class="text-lg">{resources.lobby.players.slot2}:</span>
@@ -312,33 +321,42 @@
                                 </div>
                                 {#if isHost()}
                                     <div class="flex gap-4">
-                                        <label class="flex items-center gap-2">
+                                        <div class="flex items-center gap-2">
                                             <input
+                                                id="slot2-white"
                                                 type="radio"
                                                 name="slot2-color"
+                                                value="white"
                                                 checked={lobby?.slots?.slot2?.color === 'white'}
                                                 on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'white')}
+                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
                                             />
-                                            {resources.lobby.players.color.white}
-                                        </label>
-                                        <label class="flex items-center gap-2">
+                                            <label for="slot2-white" class="text-white">{resources.lobby.players.color.white}</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
                                             <input
+                                                id="slot2-black"
                                                 type="radio"
                                                 name="slot2-color"
+                                                value="black"
                                                 checked={lobby?.slots?.slot2?.color === 'black'}
                                                 on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'black')}
+                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
                                             />
-                                            {resources.lobby.players.color.black}
-                                        </label>
-                                        <label class="flex items-center gap-2">
+                                            <label for="slot2-black" class="text-white">{resources.lobby.players.color.black}</label>
+                                        </div>
+                                        <div class="flex items-center gap-2">
                                             <input
+                                                id="slot2-random"
                                                 type="radio"
                                                 name="slot2-color"
+                                                value="random"
                                                 checked={lobby?.slots?.slot2?.color === 'random'}
                                                 on:change={() => lobby?.slots?.slot2?.player && setPlayerColor(lobby.slots.slot2.player, 'random')}
+                                                class="form-radio h-4 w-4 text-[#4CAF50] border-gray-600 focus:ring-[#4CAF50]"
                                             />
-                                            {resources.lobby.players.color.random}
-                                        </label>
+                                            <label for="slot2-random" class="text-white">{resources.lobby.players.color.random}</label>
+                                        </div>
                                     </div>
                                 {/if}
                             </div>
@@ -363,8 +381,9 @@
                     <div class="space-y-4">
                         {#if isHost()}
                             <div class="flex items-center gap-4">
-                                <label class="text-lg">{resources.lobby.timeControl.minutesLabel}</label>
+                                <label for="minutes-input" class="text-lg">{resources.lobby.timeControl.minutesLabel}</label>
                                 <input
+                                    id="minutes-input"
                                     type="number"
                                     min="1"
                                     max="60"
@@ -373,8 +392,9 @@
                                 />
                             </div>
                             <div class="flex items-center gap-4">
-                                <label class="text-lg">{resources.lobby.timeControl.incrementLabel}</label>
+                                <label for="increment-input" class="text-lg">{resources.lobby.timeControl.incrementLabel}</label>
                                 <input
+                                    id="increment-input"
                                     type="number"
                                     min="0"
                                     max="60"
@@ -384,12 +404,12 @@
                             </div>
                         {:else}
                             <div class="flex items-center gap-4">
-                                <label class="text-lg">{resources.lobby.timeControl.minutesLabel}</label>
-                                <span class="text-white">{lobby?.timeControl?.minutes || 10}</span>
+                                <label for="minutes-display" class="text-lg">{resources.lobby.timeControl.minutesLabel}</label>
+                                <span id="minutes-display" class="text-white">{lobby?.timeControl?.minutes || 10}</span>
                             </div>
                             <div class="flex items-center gap-4">
-                                <label class="text-lg">{resources.lobby.timeControl.incrementLabel}</label>
-                                <span class="text-white">{lobby?.timeControl?.increment || 0}</span>
+                                <label for="increment-display" class="text-lg">{resources.lobby.timeControl.incrementLabel}</label>
+                                <span id="increment-display" class="text-white">{lobby?.timeControl?.increment || 0}</span>
                             </div>
                         {/if}
                     </div>
@@ -440,32 +460,15 @@
 </div>
 
 <style>
-    input[type="radio"] {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 16px;
-        height: 16px;
-        border: 2px solid #666;
-        border-radius: 50%;
-        outline: none;
-        margin-right: 5px;
-        position: relative;
-        cursor: pointer;
+    .slot-bg {
+        background-color: rgba(0, 0, 0, 0.2);
     }
 
-    input[type="radio"]:checked {
-        border-color: #4CAF50;
+    .white-slot {
+        background-color: rgba(255, 255, 255, 0.1);
     }
 
-    input[type="radio"]:checked::after {
-        content: '';
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: #4CAF50;
-        border-radius: 50%;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+    .black-slot {
+        background-color: rgba(0, 0, 0, 0.2);
     }
 </style> 

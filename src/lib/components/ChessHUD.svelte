@@ -145,136 +145,35 @@
 	}
 </script>
 
-<div class="hud">
-	<div class="player-info">
-		<div class="player white {isWhiteTurn ? 'active' : ''}">
-			<span class="name">
+<div class="fixed top-5 left-5 right-5 flex justify-center z-50">
+	<div class="flex justify-between items-center w-full max-w-[800px] bg-black/70 p-2.5 px-5 rounded-lg text-white">
+		<div class="flex flex-col gap-1.5 p-1.5 px-2.5 rounded flex-1 text-left {isWhiteTurn ? 'bg-[#4CAF50]/20' : ''}">
+			<span class="text-lg font-bold flex items-center gap-1.5">
 				{whitePlayer}
 				{#if isWhitePlayer}
-					<span class="you">({resources.common.labels.you})</span>
+					<span class="text-sm text-[#4CAF50] font-normal">({resources.common.labels.you})</span>
 				{/if}
 			</span>
-			<span class="time">{whiteTimeDisplay}</span>
-			<span class="captured">{resources.chess.game.captured}: {whiteCaptured}</span>
+			<span class="text-2xl font-mono">{whiteTimeDisplay}</span>
+			<span class="text-sm text-gray-300">{resources.chess.game.captured}: {whiteCaptured}</span>
 		</div>
-		<div class="center-section">
-			<div class="game-status">
+		<div class="flex flex-col items-center gap-2.5 px-5">
+			<div class="text-center">
 				{#if isGameOver}
-					<div class="winner">{resources.chess.game.gameOver} {winner} {resources.chess.game.wins}</div>
+					<div class="text-lg font-bold text-[#4CAF50]">{resources.chess.game.gameOver} {winner} {resources.chess.game.wins}</div>
 				{/if}
 			</div>
-			<button class="back-button" on:click={handleBackToLobby}>{resources.common.labels.backToLobbies}</button>
+			<button class="px-2.5 py-1.5 bg-white/10 border-none rounded text-white cursor-pointer transition-colors hover:bg-white/20" on:click={handleBackToLobby}>{resources.common.labels.backToLobbies}</button>
 		</div>
-		<div class="player black {isBlackTurn ? 'active' : ''}">
-			<span class="name">
+		<div class="flex flex-col gap-1.5 p-1.5 px-2.5 rounded flex-1 text-left {isBlackTurn ? 'bg-[#4CAF50]/20' : ''}">
+			<span class="text-lg font-bold flex items-center gap-1.5">
 				{#if isBlackPlayer}
-					<span class="you">({resources.common.labels.you})</span>
+					<span class="text-sm text-[#4CAF50] font-normal">({resources.common.labels.you})</span>
 				{/if}
 				{blackPlayer}
 			</span>
-			<span class="time">{blackTimeDisplay}</span>
-			<span class="captured">{resources.chess.game.captured}: {blackCaptured}</span>
+			<span class="text-2xl font-mono">{blackTimeDisplay}</span>
+			<span class="text-sm text-gray-300">{resources.chess.game.captured}: {blackCaptured}</span>
 		</div>
 	</div>
-</div>
-
-<style>
-	.hud {
-		position: fixed;
-		top: 20px;
-		left: 20px;
-		right: 20px;
-		display: flex;
-		justify-content: center;
-		z-index: 1000;
-	}
-
-	.player-info {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		width: 100%;
-		max-width: 800px;
-		background: rgba(0, 0, 0, 0.7);
-		padding: 10px 20px;
-		border-radius: 8px;
-		color: white;
-	}
-
-	.player {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-		padding: 5px 10px;
-		border-radius: 4px;
-		flex: 1;
-	}
-
-	.center-section {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-		padding: 0 20px;
-	}
-
-	.player.active {
-		background: rgba(76, 175, 80, 0.2);
-	}
-
-	.player.white {
-		text-align: left;
-	}
-
-	.player.black {
-		text-align: left;
-	}
-
-	.name {
-		font-size: 1.2em;
-		font-weight: bold;
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-
-	.you {
-		font-size: 0.8em;
-		color: #4CAF50;
-		font-weight: normal;
-	}
-
-	.time {
-		font-size: 1.5em;
-		font-family: monospace;
-	}
-
-	.captured {
-		font-size: 0.9em;
-		color: #ccc;
-	}
-
-	.game-status {
-		text-align: center;
-	}
-
-	.winner {
-		font-size: 1.2em;
-		font-weight: bold;
-		color: #4CAF50;
-	}
-
-	.back-button {
-		padding: 5px 10px;
-		background: rgba(255, 255, 255, 0.1);
-		border: none;
-		border-radius: 4px;
-		color: white;
-		cursor: pointer;
-		transition: background 0.2s;
-	}
-
-	.back-button:hover {
-		background: rgba(255, 255, 255, 0.2);
-	}
-</style> 
+</div> 

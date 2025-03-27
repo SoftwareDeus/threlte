@@ -296,6 +296,12 @@
                                     <span class="px-4 py-2 bg-gray-500 text-white rounded">
                                         {resources.common.labels.full}
                                     </span>
+                                    <button
+                                        on:click={() => confirmDelete(lobby.id)}
+                                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                    >
+                                        {resources.common.buttons.delete}
+                                    </button>
                                 {:else}
                                     <button
                                         on:click={() => joinLobby(lobby.id)}
