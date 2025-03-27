@@ -1,11 +1,14 @@
 ﻿<script lang="ts">
 	import { T } from "@threlte/core";
+	import { onMount } from "svelte";
 	import type { ChessPiece } from "$lib/types/chess";
 	import ChessPieceComponent from "./ChessPiece.svelte";
 	import Tile from "./Tile.svelte";
 	import { gameState } from "$lib/stores/gameStore";
 	import { selectPiece, moveTo } from "$lib/scripts/chessHelpers";
 	import { ChessColor } from "$lib/types/chess";
+	import { lobbyId } from "$lib/stores/lobbyStore";
+	import { playerName } from "$lib/stores/playerStore";
 
 	let selectedPiece: ChessPiece | null = null;
 	let validMoves: [number, number][] = [];
@@ -16,6 +19,7 @@
 
 	let pieces: ChessPiece[] = [];
 	let activePlayer: ChessColor = ChessColor.White;
+	let playerColor: ChessColor | null = null;
 
 	// Convert chess notation to numeric coordinates
 	function chessToNumeric(position: string): [number, number] {
@@ -32,6 +36,32 @@
 		return `${file}${rank}`;
 	}
 
+	// Find a piece at a given position
+	function getPieceAtPosition(x: number, y: number): ChessPiece | null {
+		const position = numericToChess(x, y);
+		return pieces.find(p => p.position === position) || null;
+	}
+
+	// Get player's color from lobby
+	async function getPlayerColor() {
+		const currentLobbyId = $lobbyId;
+		if (!currentLobbyId) return;
+
+		try {
+			const response = await fetch(`/api/lobbies/${currentLobbyId}`);
+			if (!response.ok) return;
+
+			const lobby = await response.json();
+			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
+						 (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
+						 lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color ?
+						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
+						 null;
+		} catch (error) {
+			console.error("Failed to fetch player color:", error);
+		}
+	}
+
 	// Subscribe to game state
 	gameState.subscribe((state) => {
 		pieces = state.board;
@@ -40,6 +70,11 @@
 
 	// Select a piece
 	function handleSelect(piece: ChessPiece) {
+		// Only allow selecting pieces of the player's color
+		if (!playerColor || piece.color !== playerColor) {
+			return;
+		}
+
 		const { selected, moves } = selectPiece(piece, activePlayer, pieces);
 		selectedPiece = selected;
 		validMoves = moves;
@@ -81,8 +116,23 @@
 	}
 
 	function handleTileClick(x: number, y: number, event: MouseEvent) {
-		handleMove(x, y);
+		// If we have a selected piece, try to move to this position
+		if (selectedPiece) {
+			handleMove(x, y);
+			return;
+		}
+
+		// Otherwise, try to select a piece at this position
+		const piece = getPieceAtPosition(x, y);
+		if (piece) {
+			handleSelect(piece);
+		}
 	}
+
+	// Get player's color when component mounts
+	onMount(() => {
+		getPlayerColor();
+	});
 </script>
 
 <T.Group>
