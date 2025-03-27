@@ -53,6 +53,38 @@
         };
     });
 
+    async function updateTimeSettings() {
+        if (!$playerName || !lobby) return;
+
+        try {
+            const response = await fetch(`/api/lobbies/${lobby.id}/time-settings`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    playerName: $playerName,
+                    timeControl
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update time settings');
+            }
+
+            const updatedLobby = await response.json();
+            lobby = updatedLobby;
+        } catch (e) {
+            error = 'Failed to update time settings';
+            console.error(e);
+        }
+    }
+
+    // Watch for changes in timeControl and update the lobby
+    $: if (isHost() && lobby) {
+        updateTimeSettings();
+    }
+
     async function fetchLobby() {
         try {
             const response = await fetch(`/api/lobbies/${$page.params.id}`);
@@ -361,10 +393,10 @@
                     {/if}
                 </div>
 
-                {#if isHost()}
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold mb-4">Time Control</h2>
-                        <div class="space-y-4 bg-white/5 rounded p-4">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-4">Time Control</h2>
+                    <div class="space-y-4 bg-white/5 rounded p-4">
+                        {#if isHost()}
                             <div class="flex items-center gap-4">
                                 <label class="text-lg">Minutes per player:</label>
                                 <input
@@ -385,9 +417,18 @@
                                     class="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white"
                                 />
                             </div>
-                        </div>
+                        {:else}
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">Minutes per player:</label>
+                                <span class="text-white">{lobby?.timeControl?.minutes || 10}</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <label class="text-lg">Increment (seconds):</label>
+                                <span class="text-white">{lobby?.timeControl?.increment || 0}</span>
+                            </div>
+                        {/if}
                     </div>
-                {/if}
+                </div>
 
                 <div class="flex justify-end gap-4">
                     {#if isHost()}

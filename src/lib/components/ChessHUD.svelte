@@ -15,6 +15,7 @@
 	let lobbyInterval: number;
 	let currentPlayerColor: ChessColor = ChessColor.White;
 	let timeInterval: number;
+	let playerColor: ChessColor | null = null;
 
 	gameState.subscribe((state) => {
 		whiteCaptured = state.capturedPieces.white.length;
@@ -35,8 +36,17 @@
 			if (!response.ok) return;
 
 			const lobby = await response.json();
-			whitePlayer = lobby.players.white || "White";
-			blackPlayer = lobby.players.black || "Black";
+			whitePlayer = lobby.slots.slot1?.color === 'white' ? lobby.slots.slot1.player :
+						 lobby.slots.slot2?.color === 'white' ? lobby.slots.slot2.player : "White";
+			blackPlayer = lobby.slots.slot1?.color === 'black' ? lobby.slots.slot1.player :
+						 lobby.slots.slot2?.color === 'black' ? lobby.slots.slot2.player : "Black";
+			
+			// Set the player's color based on their slot
+			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
+						 (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
+						 lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color ?
+						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
+						 null;
 		} catch (error) {
 			console.error("Failed to fetch player info:", error);
 		}
@@ -58,7 +68,7 @@
 	});
 
 	async function updateTime() {
-		if (!$lobbyId || !currentPlayerColor) return;
+		if (!$lobbyId || !playerColor) return;
 
 		try {
 			const response = await fetch(`/api/game/${$lobbyId}/time`, {
@@ -68,7 +78,7 @@
 				},
 				body: JSON.stringify({
 					playerName: $playerName,
-					color: currentPlayerColor
+					color: playerColor
 				})
 			});
 

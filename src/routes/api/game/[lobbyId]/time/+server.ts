@@ -21,8 +21,10 @@ export const POST: RequestHandler = async ({ params, request }) => {
     }
 
     // Verify player is in the game
-    const playerColor = lobby.players.white === playerName ? ChessColor.White :
-                       lobby.players.black === playerName ? ChessColor.Black :
+    const playerColor = lobby.slots.slot1?.player === playerName && lobby.slots.slot1?.color ? 
+                       (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
+                       lobby.slots.slot2?.player === playerName && lobby.slots.slot2?.color ?
+                       (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
                        null;
 
     if (!playerColor || playerColor !== color) {
