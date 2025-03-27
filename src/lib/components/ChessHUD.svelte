@@ -5,6 +5,7 @@
 	import { lobbyId } from "$lib/stores/lobbyStore";
 	import { playerName } from "$lib/stores/playerStore";
 	import { ChessColor } from "$lib/types/chess";
+	import { goto } from "$app/navigation";
 
 	let whiteTime = 600;
 	let blackTime = 600;
@@ -16,6 +17,9 @@
 	let currentPlayerColor: ChessColor = ChessColor.White;
 	let timeInterval: number;
 	let playerColor: ChessColor | null = null;
+	let isWhiteTurn: boolean = true;
+	let isGameOver: boolean = false;
+	let winner: string = "";
 
 	gameState.subscribe((state) => {
 		whiteCaptured = state.capturedPieces.white.length;
@@ -24,6 +28,11 @@
 		if (state.timeRemaining) {
 			whiteTime = state.timeRemaining.white;
 			blackTime = state.timeRemaining.black;
+		}
+		isWhiteTurn = state.activePlayer === ChessColor.White;
+		if (state.gameOver) {
+			isGameOver = true;
+			winner = state.winner === ChessColor.White ? whitePlayer : blackPlayer;
 		}
 	});
 
@@ -109,6 +118,30 @@
 	$: isBlackPlayer = blackPlayer === $playerName;
 	$: isWhiteTurn = currentPlayerColor === ChessColor.White;
 	$: isBlackTurn = currentPlayerColor === ChessColor.Black;
+
+	async function handleBackToLobby() {
+		if (!$lobbyId) return;
+		
+		try {
+			const response = await fetch(`/api/lobbies/${$lobbyId}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					playerName: $playerName
+				})
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to delete lobby');
+			}
+
+			goto('/lobby');
+		} catch (error) {
+			console.error('Failed to delete lobby:', error);
+		}
+	}
 </script>
 
 <div class="hud">
@@ -122,6 +155,14 @@
 			</span>
 			<span class="time">{whiteTimeDisplay}</span>
 			<span class="captured">Captured: {whiteCaptured}</span>
+		</div>
+		<div class="center-section">
+			<div class="game-status">
+				{#if isGameOver}
+					<div class="winner">Game Over! {winner} wins!</div>
+				{/if}
+			</div>
+			<button class="back-button" on:click={handleBackToLobby}>Back to Lobby</button>
 		</div>
 		<div class="player black {isBlackTurn ? 'active' : ''}">
 			<span class="name">
@@ -150,6 +191,7 @@
 	.player-info {
 		display: flex;
 		justify-content: space-between;
+		align-items: center;
 		width: 100%;
 		max-width: 800px;
 		background: rgba(0, 0, 0, 0.7);
@@ -164,6 +206,15 @@
 		gap: 5px;
 		padding: 5px 10px;
 		border-radius: 4px;
+		flex: 1;
+	}
+
+	.center-section {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		padding: 0 20px;
 	}
 
 	.player.active {
@@ -200,5 +251,29 @@
 	.captured {
 		font-size: 0.9em;
 		opacity: 0.8;
+	}
+
+	.game-status {
+		text-align: center;
+	}
+
+	.winner {
+		color: #ffd700;
+		font-weight: bold;
+	}
+
+	.back-button {
+		background: #4a4a4a;
+		color: white;
+		border: none;
+		padding: 8px 16px;
+		border-radius: 5px;
+		cursor: pointer;
+		font-size: 14px;
+		transition: background-color 0.2s;
+	}
+
+	.back-button:hover {
+		background: #666666;
 	}
 </style> 

@@ -20,6 +20,7 @@
 	let pieces: ChessPiece[] = [];
 	let activePlayer: ChessColor = ChessColor.White;
 	let playerColor: ChessColor | null = null;
+	let piecesWithMoves: Set<string> = new Set();
 
 	// Convert chess notation to numeric coordinates
 	function chessToNumeric(position: string): [number, number] {
@@ -42,6 +43,37 @@
 		return pieces.find(p => p.position === position) || null;
 	}
 
+	// Check if a piece has any valid moves
+	function hasValidMoves(piece: ChessPiece): boolean {
+		const { moves } = selectPiece(piece, activePlayer, pieces);
+		return moves.length > 0;
+	}
+
+	// Update pieces with possible moves
+	function updatePiecesWithMoves() {
+		piecesWithMoves.clear();
+		if (!playerColor || activePlayer !== playerColor) return;
+
+		pieces.forEach(piece => {
+			if (piece.color === playerColor && hasValidMoves(piece)) {
+				piecesWithMoves.add(piece.position);
+			}
+		});
+	}
+
+	// Check if a tile has a piece with valid moves
+	function hasPieceWithValidMove(x: number, y: number): boolean {
+		const piece = getPieceAtPosition(x, y);
+		return piece ? piecesWithMoves.has(piece.position) : false;
+	}
+
+	// Subscribe to game state
+	gameState.subscribe((state) => {
+		pieces = state.board;
+		activePlayer = state.activePlayer;
+		updatePiecesWithMoves();
+	});
+
 	// Get player's color from lobby
 	async function getPlayerColor() {
 		const currentLobbyId = $lobbyId;
@@ -57,16 +89,13 @@
 						 lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color ?
 						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 null;
+			
+			// Update pieces with moves when we get the player's color
+			updatePiecesWithMoves();
 		} catch (error) {
 			console.error("Failed to fetch player color:", error);
 		}
 	}
-
-	// Subscribe to game state
-	gameState.subscribe((state) => {
-		pieces = state.board;
-		activePlayer = state.activePlayer;
-	});
 
 	// Select a piece
 	function handleSelect(piece: ChessPiece) {
@@ -144,6 +173,7 @@
 				tileSize={tileSize}
 				isValidMove={validMoves.some(([mx, my]) => mx === x && my === y)}
 				isUnderAttackField={threatFields.some(([mx, my]) => mx === x && my === y)}
+				hasPieceWithValidMove={hasPieceWithValidMove(x, y)}
 				onTileClick={handleTileClick}
 			/>
 		{/each}

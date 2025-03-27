@@ -3,6 +3,8 @@ import type { RequestHandler } from './$types';
 import type { Lobby } from '$lib/types';
 import { getLobbies, updateLobbies } from '$lib/scripts/lobbyStore';
 import { deleteGameState } from '$lib/scripts/serverGameState';
+import { gameState } from '$lib/scripts/gameState';
+import { ChessColor } from '$lib/types/chess';
 
 export const GET: RequestHandler = async ({ params }) => {
     const lobbyId = params.id;
@@ -33,13 +35,16 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
     const currentLobbies = getLobbies();
     console.log('Current lobbies:', currentLobbies);
     
-    const lobbyIndex = currentLobbies.findIndex(l => l.id === lobbyId);
-    console.log('Found lobby at index:', lobbyIndex);
-    
-    if (lobbyIndex === -1) {
+    const lobby = currentLobbies.find(l => l.id === lobbyId);
+    if (!lobby) {
         console.log('Lobby not found');
         return json({ error: 'Lobby not found' }, { status: 404 });
     }
+
+    // Get the other player's name
+    const otherPlayer = lobby.slots.slot1?.player === playerName ? 
+        lobby.slots.slot2?.player : 
+        lobby.slots.slot1?.player;
 
     // Remove the lobby from the array
     const updatedLobbies = currentLobbies.filter(l => l.id !== lobbyId);
@@ -51,5 +56,20 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
     deleteGameState(lobbyId);
     console.log('Game state deleted');
 
-    return json({ success: true });
+    // Reset the game state store for both players
+    gameState.set({
+        pieces: [],
+        activePlayer: ChessColor.White,
+        capturedPieces: {
+            white: [],
+            black: []
+        },
+        status: null,
+        reset: () => {}
+    });
+
+    return json({ 
+        success: true,
+        otherPlayer
+    });
 }; 

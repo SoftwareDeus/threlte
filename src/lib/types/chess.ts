@@ -24,14 +24,14 @@ export interface Move {
 }
 
 export interface GameState {
-    board: ChessPiece[];
+    pieces: ChessPiece[];
     activePlayer: ChessColor;
     capturedPieces: {
         white: ChessPiece[];
         black: ChessPiece[];
     };
-    status: string | null;
-    reset: () => void;
+    status?: string | null;
+    reset?: () => void;
     lastMove?: Move;
     playerName?: string;
     timeControl?: {
@@ -42,4 +42,6 @@ export interface GameState {
         white: number;
         black: number;
     };
+    gameOver?: boolean;
+    winner?: ChessColor;
 } 
