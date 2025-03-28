@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
     import { playerName } from '$lib/stores/playerStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
@@ -33,6 +33,7 @@
     let newLobbyName = '';
     let error: string | null = null;
     let deleteConfirmId: string | null = null;
+    let pollInterval: NodeJS.Timeout;
 
     onMount(async () => {
         try {
@@ -48,6 +49,8 @@
                 return;
             }
             await fetchLobbies();
+            // Start polling for lobby updates every 2 seconds
+            pollInterval = setInterval(fetchLobbies, 2000);
         } catch (error) {
             Sentry.captureException(error, {
                 extra: {
@@ -55,6 +58,13 @@
                 }
             });
             error = resources.errors.common.fetchFailed;
+        }
+    });
+
+    // Clean up the interval when the component is destroyed
+    onDestroy(() => {
+        if (pollInterval) {
+            clearInterval(pollInterval);
         }
     });
 
