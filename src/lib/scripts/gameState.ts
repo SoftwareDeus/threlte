@@ -1,6 +1,6 @@
 ﻿import { writable } from "svelte/store";
-import type { ChessPieceData, GameState } from "../types";
-import { ChessPieceType, ChessColor } from "../types";
+import type { ChessPieceData, GameState } from "$lib/types/chess";
+import { ChessPieceType, ChessColor } from "$lib/types/chess";
 
 // UUID-Generator für eindeutige IDs
 let idCounter = 0;

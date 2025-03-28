@@ -2,17 +2,17 @@
 	import { T } from "@threlte/core";
 	import { gameState } from "$lib/stores/gameStore";
 	import ChessPieceComponent from "./ChessPiece.svelte";
+	import { resources } from "$lib/resources";
+	import { ChessColor } from "$lib/types/chess";
 
-	export let color: 'white' | 'black';
-	let platformWidth = 8;
-	let platformDepth = 2;
-	let platformHeight = 0.1;
+	export let color: ChessColor;
+	export let side: 'left' | 'right';
 
-	$: capturedPieces = $gameState.capturedPieces[color];
+	$: capturedPieces = $gameState.capturedPieces[color === ChessColor.White ? 'white' : 'black'];
 
 	$: platformX = 0;
 	$: platformY = 0.05;
-	$: platformZ = color === 'white' ? -6 : 6;
+	$: platformZ = color === ChessColor.White ? resources.config.capturePlatform.whiteZ : resources.config.capturePlatform.blackZ;
 
 	function handlePieceClick() {
 		return;
@@ -21,7 +21,11 @@
 
 <T.Group position={[platformX, platformY, platformZ]}>
 	<T.Mesh>
-		<T.BoxGeometry args={[platformWidth, platformHeight, platformDepth]} />
+		<T.BoxGeometry args={[
+			resources.config.capturePlatform.width,
+			resources.config.capturePlatform.height,
+			resources.config.capturePlatform.depth
+		]} />
 		<T.MeshStandardMaterial color="#4a4a4a" />
 	</T.Mesh>
 
@@ -30,8 +34,8 @@
 			type={piece.type}
 			color={piece.color}
 			position={[
-				(i - (capturedPieces.length - 1) / 2) * 1.2,
-				0.1,
+				(i - (capturedPieces.length - 1) / 2) * resources.config.capturePlatform.pieceSpacing,
+				resources.config.capturePlatform.pieceHeight,
 				0
 			]}
 			onclickDelegate={handlePieceClick}

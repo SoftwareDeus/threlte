@@ -8,6 +8,7 @@
 	import { gameState } from '$lib/stores/gameStore';
 	import { initialState } from '$lib/stores/gameStore';
 	import { lobbyId } from '$lib/stores/lobbyStore';
+	import { resources } from '$lib/resources';
 
 	let error: string | null = null;
 	let pollInterval: number;
@@ -20,29 +21,29 @@
 			if (!response.ok) {
 				const data = await response.json();
 				if (data.error === 'Game not found or not started') {
-					error = 'Game has ended';
+					error = resources.errors.server.validation.gameNotFound;
 					setTimeout(() => goto('/lobby'), 2000);
 					return;
 				}
-				throw new Error(data.error || 'Failed to fetch game state');
+				throw new Error(data.error || resources.errors.common.fetchFailed);
 			}
 			const serverState = await response.json();
 			gameState.set(serverState);
 		} catch (e) {
-			console.error('Failed to fetch game state:', e);
-			error = e instanceof Error ? e.message : 'Failed to fetch game state';
+			console.error(resources.errors.common.fetchFailed, e);
+			error = e instanceof Error ? e.message : resources.errors.common.fetchFailed;
 		}
 	}
 
 	onMount(async () => {
 		if (!$playerName) {
-			error = 'Please enter your name in the main menu';
+			error = resources.errors.common.nameRequired;
 			setTimeout(() => goto('/'), 2000);
 			return;
 		}
 
 		if (!$lobbyId) {
-			error = 'No lobby selected';
+			error = resources.errors.common.fetchFailed;
 			setTimeout(() => goto('/lobby'), 2000);
 			return;
 		}
@@ -75,7 +76,7 @@
 				on:click={() => error = null}
 				class="text-white hover:text-white/80"
 			>
-				×
+				{resources.errors.common.closeButton}
 			</button>
 		</div>
 	{/if}

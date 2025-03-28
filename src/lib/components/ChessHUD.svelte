@@ -6,9 +6,10 @@
 	import { playerName } from "$lib/stores/playerStore";
 	import { ChessColor } from "$lib/types/chess";
 	import { goto } from "$app/navigation";
+	import { resources } from '$lib/resources';
 
-	let whiteTime = 600;
-	let blackTime = 600;
+	let whiteTime = resources.config.time.defaultMinutes * 60;
+	let blackTime = resources.config.time.defaultMinutes * 60;
 	let whiteCaptured = 0;
 	let blackCaptured = 0;
 	let whitePlayer = "";
@@ -46,9 +47,9 @@
 
 			const lobby = await response.json();
 			whitePlayer = lobby.slots.slot1?.color === 'white' ? lobby.slots.slot1.player :
-						 lobby.slots.slot2?.color === 'white' ? lobby.slots.slot2.player : "White";
+						 lobby.slots.slot2?.color === 'white' ? lobby.slots.slot2.player : resources.ui.chess.pieces.white.king;
 			blackPlayer = lobby.slots.slot1?.color === 'black' ? lobby.slots.slot1.player :
-						 lobby.slots.slot2?.color === 'black' ? lobby.slots.slot2.player : "Black";
+						 lobby.slots.slot2?.color === 'black' ? lobby.slots.slot2.player : resources.ui.chess.pieces.black.king;
 			
 			// Set the player's color based on their slot
 			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
@@ -57,7 +58,7 @@
 						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 null;
 		} catch (error) {
-			console.error("Failed to fetch player info:", error);
+			console.error(resources.errors.common.fetchFailed, error);
 		}
 	}
 
@@ -93,7 +94,7 @@
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to update time');
+				throw new Error(data.error || resources.errors.common.updateFailed);
 			}
 
 			const state = await response.json();
@@ -102,7 +103,7 @@
 				blackTime = state.timeRemaining.black;
 			}
 		} catch (error) {
-			console.error('Failed to update time:', error);
+			console.error(resources.errors.common.updateFailed, error);
 		}
 	}
 
@@ -134,146 +135,45 @@
 			});
 
 			if (!response.ok) {
-				throw new Error('Failed to delete lobby');
+				throw new Error(resources.errors.common.deleteFailed);
 			}
 
 			goto('/lobby');
 		} catch (error) {
-			console.error('Failed to delete lobby:', error);
+			console.error(resources.errors.common.deleteFailed, error);
 		}
 	}
 </script>
 
-<div class="hud">
-	<div class="player-info">
-		<div class="player white {isWhiteTurn ? 'active' : ''}">
-			<span class="name">
+<div class="fixed top-5 left-5 right-5 flex justify-center z-50">
+	<div class="flex justify-between items-center w-full max-w-[800px] bg-black/70 p-2.5 px-5 rounded-lg text-white">
+		<div class="flex flex-col gap-1.5 p-1.5 px-2.5 rounded flex-1 text-left {isWhiteTurn ? 'bg-[#4CAF50]/20' : ''}">
+			<span class="text-lg font-bold flex items-center gap-1.5">
 				{whitePlayer}
 				{#if isWhitePlayer}
-					<span class="you">(you)</span>
+					<span class="text-sm text-[#4CAF50] font-normal">({resources.ui.labels.you})</span>
 				{/if}
 			</span>
-			<span class="time">{whiteTimeDisplay}</span>
-			<span class="captured">Captured: {whiteCaptured}</span>
+			<span class="text-2xl font-mono">{whiteTimeDisplay}</span>
+			<span class="text-sm text-gray-300">{resources.ui.chess.game.captured}: {whiteCaptured}</span>
 		</div>
-		<div class="center-section">
-			<div class="game-status">
+		<div class="flex flex-col items-center gap-2.5 px-5">
+			<div class="text-center">
 				{#if isGameOver}
-					<div class="winner">Game Over! {winner} wins!</div>
+					<div class="text-lg font-bold text-[#4CAF50]">{resources.ui.chess.game.gameOver} {winner} {resources.ui.chess.game.wins}</div>
 				{/if}
 			</div>
-			<button class="back-button" on:click={handleBackToLobby}>Back to Lobby</button>
+			<button class="px-2.5 py-1.5 bg-white/10 border-none rounded text-white cursor-pointer transition-colors hover:bg-white/20" on:click={handleBackToLobby}>{resources.ui.labels.backToLobbies}</button>
 		</div>
-		<div class="player black {isBlackTurn ? 'active' : ''}">
-			<span class="name">
+		<div class="flex flex-col gap-1.5 p-1.5 px-2.5 rounded flex-1 text-left {isBlackTurn ? 'bg-[#4CAF50]/20' : ''}">
+			<span class="text-lg font-bold flex items-center gap-1.5">
 				{#if isBlackPlayer}
-					<span class="you">(you)</span>
+					<span class="text-sm text-[#4CAF50] font-normal">({resources.ui.labels.you})</span>
 				{/if}
 				{blackPlayer}
 			</span>
-			<span class="time">{blackTimeDisplay}</span>
-			<span class="captured">Captured: {blackCaptured}</span>
+			<span class="text-2xl font-mono">{blackTimeDisplay}</span>
+			<span class="text-sm text-gray-300">{resources.ui.chess.game.captured}: {blackCaptured}</span>
 		</div>
 	</div>
-</div>
-
-<style>
-	.hud {
-		position: fixed;
-		top: 20px;
-		left: 20px;
-		right: 20px;
-		display: flex;
-		justify-content: center;
-		z-index: 1000;
-	}
-
-	.player-info {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		width: 100%;
-		max-width: 800px;
-		background: rgba(0, 0, 0, 0.7);
-		padding: 10px 20px;
-		border-radius: 8px;
-		color: white;
-	}
-
-	.player {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-		padding: 5px 10px;
-		border-radius: 4px;
-		flex: 1;
-	}
-
-	.center-section {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-		padding: 0 20px;
-	}
-
-	.player.active {
-		background: rgba(76, 175, 80, 0.2);
-	}
-
-	.player.white {
-		text-align: left;
-	}
-
-	.player.black {
-		text-align: left;
-	}
-
-	.name {
-		font-size: 1.2em;
-		font-weight: bold;
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-
-	.you {
-		font-size: 0.8em;
-		color: #4CAF50;
-		font-weight: normal;
-	}
-
-	.time {
-		font-size: 1.5em;
-		font-family: monospace;
-	}
-
-	.captured {
-		font-size: 0.9em;
-		opacity: 0.8;
-	}
-
-	.game-status {
-		text-align: center;
-	}
-
-	.winner {
-		color: #ffd700;
-		font-weight: bold;
-	}
-
-	.back-button {
-		background: #4a4a4a;
-		color: white;
-		border: none;
-		padding: 8px 16px;
-		border-radius: 5px;
-		cursor: pointer;
-		font-size: 14px;
-		transition: background-color 0.2s;
-	}
-
-	.back-button:hover {
-		background: #666666;
-	}
-</style> 
+</div> 
