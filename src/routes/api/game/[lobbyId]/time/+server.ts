@@ -3,68 +3,48 @@ import type { RequestHandler } from './$types';
 import { ChessColor } from '$lib/types/chess';
 import { getGameState, updateGameState } from '$lib/scripts/serverGameState';
 import { getLobbies } from '$lib/scripts/lobbyStore';
+import { resources } from '$lib/resources';
 
 export const POST: RequestHandler = async ({ params, request }) => {
     const { playerName, color } = await request.json();
     const lobbyId = params.lobbyId;
 
     if (!playerName || !color) {
-        return json({ error: 'Player name and color are required' }, { status: 400 });
+        return json({ error: resources.errors.server.validation.missingRequiredFields }, { status: 400 });
     }
 
     // Check if lobby exists and is in playing state
     const lobbies = getLobbies();
     const lobby = lobbies.find(l => l.id === lobbyId);
-    
     if (!lobby || lobby.status !== 'playing') {
-        return json({ error: 'Game not found or not started' }, { status: 404 });
+        return json({ error: resources.errors.server.validation.gameNotFound }, { status: 404 });
     }
 
     // Verify player is in the game
-    const playerColor = lobby.slots.slot1?.player === playerName && lobby.slots.slot1?.color ? 
-                       (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
+    const playerColor = lobby.slots.slot1?.player === playerName && lobby.slots.slot1?.color ?
+                       (lobby.slots.slot1.color === ChessColor.White ? ChessColor.White : ChessColor.Black) :
                        lobby.slots.slot2?.player === playerName && lobby.slots.slot2?.color ?
-                       (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
+                       (lobby.slots.slot2.color === ChessColor.White ? ChessColor.White : ChessColor.Black) :
                        null;
 
     if (!playerColor || playerColor !== color) {
-        return json({ error: 'Invalid player or color' }, { status: 400 });
+        return json({ error: resources.errors.server.validation.invalidPlayerOrColor }, { status: 400 });
     }
 
     const currentState = getGameState(lobbyId);
     if (!currentState.timeControl || !currentState.timeRemaining) {
-        return json({ error: 'Time control not initialized' }, { status: 400 });
+        return json({ error: resources.errors.server.validation.timeControlNotInitialized }, { status: 400 });
     }
 
     // Update time for the current player
     const newTimeRemaining = { ...currentState.timeRemaining };
-    if (color === ChessColor.White) {
-        newTimeRemaining.white = Math.max(0, newTimeRemaining.white - 1);
-        if (currentState.timeControl.increment > 0) {
-            newTimeRemaining.white += currentState.timeControl.increment;
-        }
-    } else {
-        newTimeRemaining.black = Math.max(0, newTimeRemaining.black - 1);
-        if (currentState.timeControl.increment > 0) {
-            newTimeRemaining.black += currentState.timeControl.increment;
-        }
-    }
+    newTimeRemaining[color === ChessColor.White ? 'white' : 'black'] -= 1;
 
-    // Check for time out
-    let newStatus = currentState.status;
-    if (newTimeRemaining.white <= 0) {
-        newStatus = 'Black wins on time';
-    } else if (newTimeRemaining.black <= 0) {
-        newStatus = 'White wins on time';
-    }
-
-    // Update game state
-    const newState = {
+    // Update the game state
+    updateGameState(lobbyId, {
         ...currentState,
-        timeRemaining: newTimeRemaining,
-        status: newStatus
-    };
+        timeRemaining: newTimeRemaining
+    });
 
-    updateGameState(lobbyId, newState);
-    return json(newState);
+    return json({ timeRemaining: newTimeRemaining });
 }; 

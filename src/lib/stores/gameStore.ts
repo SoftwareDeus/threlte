@@ -3,7 +3,7 @@ import type { GameState } from '../types/chess';
 import { ChessColor } from '../types/chess';
 
 export const initialState: GameState = {
-    board: [],
+    pieces: [],
     activePlayer: ChessColor.White,
     capturedPieces: {
         white: [],

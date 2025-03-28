@@ -1,6 +1,5 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { Lobby } from '$lib/types';
 import { getLobbies, updateLobbies } from '$lib/scripts/lobbyStore';
 import { deleteGameState } from '$lib/scripts/serverGameState';
 import { gameState } from '$lib/scripts/gameState';

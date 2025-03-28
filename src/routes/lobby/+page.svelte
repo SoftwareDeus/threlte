@@ -3,6 +3,8 @@
     import { goto } from '$app/navigation';
     import { playerName } from '$lib/stores/playerStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
+    import { resources } from '$lib/resources';
+    import { ChessColor } from '$lib/types/chess';
 
     interface Lobby {
         id: string;
@@ -13,11 +15,11 @@
         slots: {
             slot1?: {
                 player?: string;
-                color: 'white' | 'black';
+                color: ChessColor;
             };
             slot2?: {
                 player?: string;
-                color: 'white' | 'black';
+                color: ChessColor;
             };
         };
         timeControl?: {
@@ -33,7 +35,7 @@
 
     onMount(async () => {
         if (!$playerName) {
-            error = 'Please enter your name in the main menu';
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -43,22 +45,25 @@
     async function fetchLobbies() {
         try {
             const response = await fetch('/api/lobbies');
+            if (!response.ok) {
+                throw new Error(resources.errors.common.fetchFailed);
+            }
             lobbies = await response.json();
         } catch (e) {
-            error = 'Failed to fetch lobbies';
+            error = resources.errors.common.fetchFailed;
             console.error(e);
         }
     }
 
     async function createLobby() {
         if (!$playerName) {
-            error = 'Please enter your name in the main menu';
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
 
         if (!newLobbyName.trim()) {
-            error = 'Please enter a lobby name';
+            error = resources.errors.common.lobbyNameRequired;
             return;
         }
 
@@ -75,20 +80,21 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to create lobby');
+                throw new Error(resources.errors.common.createFailed);
             }
 
             const newLobby = await response.json();
+            lobbies = [...lobbies, newLobby];
             goto(`/lobby/${newLobby.id}`);
         } catch (e) {
-            error = 'Failed to create lobby';
+            error = resources.errors.common.createFailed;
             console.error(e);
         }
     }
 
     async function joinLobby(lobbyId: string) {
         if (!$playerName) {
-            error = 'Please enter your name in the main menu';
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -105,19 +111,21 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to join lobby');
+                throw new Error(resources.errors.common.joinFailed);
             }
 
+            const updatedLobby = await response.json();
+            lobbies = lobbies.map(l => l.id === lobbyId ? updatedLobby : l);
             goto(`/lobby/${lobbyId}`);
         } catch (e) {
-            error = 'Failed to join lobby';
+            error = resources.errors.common.joinFailed;
             console.error(e);
         }
     }
 
     async function startGame(id: string) {
         if (!$playerName) {
-            error = 'Please enter your name in the main menu';
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -134,21 +142,22 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to start game');
+                throw new Error(resources.errors.common.startFailed);
             }
 
-            // Set the lobbyId in the store before redirecting
+            const updatedLobby = await response.json();
+            lobbies = lobbies.map(l => l.id === id ? updatedLobby : l);
             lobbyId.set(id);
-            goto('/game');
+            goto(`/game/${id}`);
         } catch (e) {
-            error = 'Failed to start game';
+            error = resources.errors.common.startFailed;
             console.error(e);
         }
     }
 
     async function deleteLobby() {
         if (!$playerName || !deleteConfirmId) {
-            error = 'Please enter your name in the main menu';
+            error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
@@ -165,13 +174,13 @@
             });
 
             if (!response.ok) {
-                throw new Error('Failed to delete lobby');
+                throw new Error(resources.errors.common.deleteFailed);
             }
 
             deleteConfirmId = null;
             await fetchLobbies();
         } catch (e) {
-            error = 'Failed to delete lobby';
+            error = resources.errors.common.deleteFailed;
             console.error(e);
         }
     }
@@ -195,23 +204,23 @@
 
 <div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold mb-8">Chess Lobbies</h1>
+        <h1 class="text-4xl font-bold mb-8">{resources.ui.lobby.title}</h1>
 
         <!-- Create Lobby -->
         <div class="mb-8">
-            <h2 class="text-2xl font-bold mb-4">Create New Lobby</h2>
+            <h2 class="text-2xl font-bold mb-4">{resources.ui.lobby.createNew}</h2>
             <div class="flex gap-4">
                 <input
                     type="text"
                     bind:value={newLobbyName}
-                    placeholder="Enter lobby name"
+                    placeholder={resources.ui.lobby.nameInput.placeholder}
                     class="flex-1 px-4 py-2 border-2 border-white/20 rounded bg-white/10 text-white text-base transition-colors focus:outline-none focus:border-[#4CAF50] placeholder-white/50"
                 />
                 <button
                     on:click={createLobby}
                     class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                 >
-                    Create Lobby
+                    {resources.ui.buttons.create}
                 </button>
             </div>
         </div>
@@ -226,21 +235,21 @@
                                 {index + 1}
                             </div>
                             <div class="flex-1 text-center">
-                                <h3 class="text-xl font-bold mb-2">Confirm Delete</h3>
-                                <p class="text-white/70">Are you sure you want to delete this lobby?</p>
+                                <h3 class="text-xl font-bold mb-2">{resources.ui.labels.confirmDelete}</h3>
+                                <p class="text-white/70">{resources.ui.labels.confirmDeleteMessage}</p>
                             </div>
                             <div class="w-48 flex justify-end gap-2">
                                 <button
                                     on:click={cancelDelete}
                                     class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                                 >
-                                    Cancel
+                                    {resources.ui.buttons.cancel}
                                 </button>
                                 <button
                                     on:click={deleteLobby}
                                     class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                 >
-                                    Delete
+                                    {resources.ui.buttons.delete}
                                 </button>
                             </div>
                         </div>
@@ -251,60 +260,68 @@
                             <div class="w-16 text-center text-white/50">
                                 {index + 1}
                             </div>
-                            <div class="flex-1 flex items-center justify-center gap-16">
-                                <h3 class="text-2xl font-bold">{lobby.name}</h3>
-                                <div class="text-sm text-white/70">
-                                    Host: {lobby.slots?.slot1?.player || 'Waiting...'}
-                                    <br>
-                                    Player: {lobby.slots?.slot2?.player || 'Waiting...'}
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold">{lobby.name}</h3>
+                                <p class="text-white/70">
+                                    {resources.ui.labels.host}: {lobby.host}
+                                    {#if isHost(lobby)}
+                                        <span class="text-[#4CAF50] ml-2">({resources.ui.labels.you})</span>
+                                    {/if}
+                                </p>
+                                <div class="text-sm text-white/50 mt-1">
+                                    {#if lobby.slots.slot1?.player}
+                                        <span class="mr-2">Slot 1: {lobby.slots.slot1.player} ({lobby.slots.slot1.color})</span>
+                                    {/if}
+                                    {#if lobby.slots.slot2?.player}
+                                        <span>Slot 2: {lobby.slots.slot2.player} ({lobby.slots.slot2.color})</span>
+                                    {/if}
                                 </div>
                             </div>
                             <div class="w-48 flex justify-end gap-2">
                                 {#if isHost(lobby)}
-                                    <button
-                                        on:click={() => startGame(lobby.id)}
-                                        class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                                    >
-                                        Start Game
-                                    </button>
+                                    {#if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
+                                        <button
+                                            on:click={() => startGame(lobby.id)}
+                                            class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
+                                        >
+                                            {resources.ui.buttons.start}
+                                        </button>
+                                    {/if}
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        Delete
+                                        {resources.ui.buttons.delete}
                                     </button>
                                 {:else if isJoined(lobby)}
-                                    <span class="px-4 py-2 bg-[#4CAF50]/50 text-white rounded">
-                                        Joined
-                                    </span>
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        Delete
+                                        {resources.ui.buttons.leave}
                                     </button>
                                 {:else if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
                                     <span class="px-4 py-2 bg-gray-500 text-white rounded">
-                                        Full
+                                        {resources.ui.labels.full}
                                     </span>
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        Delete
+                                        {resources.ui.buttons.delete}
                                     </button>
                                 {:else}
                                     <button
                                         on:click={() => joinLobby(lobby.id)}
                                         class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
                                     >
-                                        Join
+                                        {resources.ui.buttons.join}
                                     </button>
                                     <button
                                         on:click={() => confirmDelete(lobby.id)}
                                         class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                     >
-                                        Delete
+                                        {resources.ui.buttons.delete}
                                     </button>
                                 {/if}
                             </div>
@@ -322,7 +339,7 @@
                     on:click={() => error = null}
                     class="text-white hover:text-white/80"
                 >
-                    ×
+                    {resources.errors.common.closeButton}
                 </button>
             </div>
         {/if}

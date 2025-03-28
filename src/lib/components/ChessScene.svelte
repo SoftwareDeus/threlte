@@ -8,6 +8,7 @@
 	import { gameState } from '$lib/stores/gameStore';
 	import { playerName } from '$lib/stores/playerStore';
 	import type { GameState } from '$lib/types/chess';
+	import { ChessColor } from '$lib/types/chess';
 
 	export let lobbyId: string | null = null;
 
@@ -59,7 +60,7 @@
 	<T.AmbientLight intensity={0.5} />
 	<T.DirectionalLight position={[10, 10, 5]} intensity={1} />
 	<ChessBoard />
-	<CapturePlatform side="left" color="black" />
-	<CapturePlatform side="right" color="white" />
+	<CapturePlatform side="left" color={ChessColor.Black} />
+	<CapturePlatform side="right" color={ChessColor.White} />
 </T.Scene>
   
