@@ -1,95 +1,136 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { gameState } from '$lib/stores/gameStore';
     import { initialState } from '$lib/stores/gameStore';
-    import { playerName } from '$lib/stores/playerStore';
+    import { playerStore } from '$lib/stores/playerStore';
+    import { authStore } from '$lib/stores/authStore';
     import { resources } from '$lib/resources';
     import * as Sentry from '@sentry/sveltekit';
+    import PlayerProfile from './PlayerProfile.svelte';
+    import { PlayerService } from '$lib/services/playerService';
+    import { supabase } from '$lib/services/supabase';
 
-    function startNewGame() {
-        try {
-            if (!$playerName) {
-                Sentry.captureMessage('Missing player name', {
-                    level: 'error',
-                    extra: {
-                        errorMessage: resources.errors.common.nameRequired
-                    }
-                });
-                error = resources.errors.common.nameRequired;
-                return;
-            }
-            gameState.set(initialState);
-            goto('/game');
-        } catch (error) {
-            Sentry.captureException(error, {
-                extra: {
-                    errorMessage: resources.errors.common.startFailed
-                }
-            });
-            error = resources.errors.common.startFailed;
+    let showProfile = false;
+    let error: string | null = null;
+    let connectionStatus = 'Connecting...';
+    let testStatus = '';
+
+    $: isAuthenticated = !!$authStore.user;
+
+    onMount(async () => {
+        // Redirect to auth page if not authenticated
+        if (!isAuthenticated) {
+            await goto('/auth');
+            return;
         }
+
+        // Check Supabase connection
+        try {
+            const { data, error } = await supabase.from('player_profiles').select('count').limit(1);
+            if (error) throw error;
+            connectionStatus = 'Connected';
+        } catch (e) {
+            connectionStatus = 'Connection Error';
+            error = 'Failed to connect to server';
+        }
+    });
+
+    async function testConnection() {
+        connectionStatus = 'Testing connection...';
+        const isConnected = await PlayerService.testConnection();
+        connectionStatus = isConnected ? 'Connected to Supabase!' : 'Connection failed';
     }
 
-    function goToLobby() {
-        try {
-            if (!$playerName) {
-                Sentry.captureMessage('Missing player name', {
-                    level: 'error',
-                    extra: {
-                        errorMessage: resources.errors.common.nameRequired
-                    }
-                });
-                error = resources.errors.common.nameRequired;
-                return;
-            }
-            goto('/lobby');
-        } catch (error) {
-            Sentry.captureException(error, {
-                extra: {
-                    errorMessage: resources.errors.common.joinFailed
-                }
-            });
-            error = resources.errors.common.joinFailed;
-        }
+    async function testProfileCreation() {
+        testStatus = 'Creating test profile...';
+        const success = await PlayerService.createTestProfile();
+        testStatus = success ? 'Test profile created successfully!' : 'Failed to create test profile';
     }
 
-    let error = '';
+    async function handleStartGame() {
+        if (!$authStore.user) {
+            error = 'Please log in to start a game';
+            return;
+        }
+        await goto('/game');
+    }
+
+    async function handleGoToLobby() {
+        if (!$authStore.user) {
+            error = 'Please log in to join the lobby';
+            return;
+        }
+        await goto('/lobby');
+    }
+
+    function toggleProfile() {
+        showProfile = !showProfile;
+    }
+
+    async function handleSignOut() {
+        const result = await authStore.signOut();
+        if (result.error) {
+            error = result.error;
+        } else {
+            await goto('/');
+        }
+    }
 </script>
 
 <div class="w-screen h-screen flex flex-col justify-center items-center bg-[#1a1a1a] text-white font-sans">
     <h1 class="text-5xl mb-8 text-white">{resources.ui.mainMenu.title}</h1>
     
-    <div class="mb-8 w-full max-w-[300px]">
-        <input
-            type="text"
-            bind:value={$playerName}
-            placeholder={resources.ui.mainMenu.nameInput.placeholder}
-            class="w-full px-4 py-3 border-2 border-white/20 rounded bg-white/10 text-white text-base transition-colors focus:outline-none focus:border-[#4CAF50] placeholder-white/50"
-            on:input={(e: Event) => {
-                const target = e.target as HTMLInputElement;
-                console.log('Player name changed:', target.value);
-            }}
-        />
-    </div>
-
     <div class="flex flex-col gap-4">
-        <button 
-            on:click={startNewGame}
-            class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
-        >
-            {resources.ui.buttons.localGame}
-        </button>
-        <button 
-            on:click={goToLobby}
-            class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
-        >
-            {resources.ui.buttons.multiplayer}
-        </button>
+        {#if isAuthenticated}
+            <button 
+                on:click={handleStartGame}
+                class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
+            >
+                {resources.ui.buttons.localGame}
+            </button>
+            <button 
+                on:click={handleGoToLobby}
+                class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
+            >
+                {resources.ui.buttons.multiplayer}
+            </button>
+            <button 
+                on:click={toggleProfile}
+                class="px-8 py-4 text-xl bg-[#2196F3] text-white rounded cursor-pointer transition-all hover:bg-[#1976D2] min-w-[200px]"
+            >
+                {showProfile ? 'Hide Profile' : 'Show Profile'}
+            </button>
+            <button 
+                on:click={handleSignOut}
+                class="px-8 py-4 text-xl bg-[#f44336] text-white rounded cursor-pointer transition-all hover:bg-[#d32f2f] min-w-[200px]"
+            >
+                Sign Out
+            </button>
+        {/if}
     </div>
 
     {#if error}
         <div class="mt-4 px-4 py-2 text-[#ff4444] bg-[#ff4444]/10 rounded">
             {error}
+        </div>
+    {/if}
+
+    {#if connectionStatus}
+        <div class="mt-4 px-4 py-2 {connectionStatus.includes('Connected') ? 'text-[#4CAF50] bg-[#4CAF50]/10' : 'text-[#ff4444] bg-[#ff4444]/10'} rounded">
+            {connectionStatus}
+        </div>
+    {/if}
+
+    {#if testStatus}
+        <div class="mt-4 px-4 py-2 {testStatus.includes('successfully') ? 'text-[#4CAF50] bg-[#4CAF50]/10' : 'text-[#ff4444] bg-[#ff4444]/10'} rounded">
+            {testStatus}
+        </div>
+    {/if}
+
+    {#if showProfile}
+        <div class="mt-8 w-full max-w-md">
+            <PlayerProfile />
         </div>
     {/if}
 </div> 

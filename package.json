@@ -40,6 +40,7 @@
 	},
 	"dependencies": {
 		"@sentry/sveltekit": "9",
+		"@supabase/supabase-js": "^2.49.3",
 		"@threlte/core": "^8.0.1",
 		"@threlte/extras": "^9.1.0",
 		"three": "^0.174.0"
