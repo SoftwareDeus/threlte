@@ -39,6 +39,7 @@
 		"vite": "^6.0.0"
 	},
 	"dependencies": {
+		"@sentry/sveltekit": "9",
 		"@threlte/core": "^8.0.1",
 		"@threlte/extras": "^9.1.0",
 		"three": "^0.174.0"
