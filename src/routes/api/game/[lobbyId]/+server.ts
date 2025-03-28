@@ -43,7 +43,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
         const lobbyId = params.lobbyId;
         const { playerName, move } = await request.json();
         
-        // Check if lobby exists and is in playing state
         const lobbies = getLobbies();
         const lobby = lobbies.find(l => l.id === lobbyId);
         
@@ -58,7 +57,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
             return json({ error: resources.errors.server.validation.gameNotFound }, { status: 404 });
         }
 
-        // Validate move
         if (!move || !move.pieceId || !move.targetPosition) {
             Sentry.captureMessage('Invalid move', {
                 level: 'error',
@@ -71,7 +69,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
 
         const currentState = getGameState(lobbyId);
 
-        // Find the piece being moved
         const piece = currentState.pieces.find(p => p.position === move.pieceId);
         if (!piece) {
             Sentry.captureMessage('Piece not found', {
@@ -83,7 +80,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
             return json({ error: resources.errors.server.validation.pieceNotFound }, { status: 400 });
         }
 
-        // Determine player's color from lobby
         const playerColor = lobby.slots.slot1?.player === playerName && lobby.slots.slot1?.color ? 
                        (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
                        lobby.slots.slot2?.player === playerName && lobby.slots.slot2?.color ?
@@ -100,7 +96,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
             return json({ error: resources.errors.server.validation.playerNotFound }, { status: 400 });
         }
 
-        // Check if it's the player's turn and they're moving their own pieces
         if (currentState.activePlayer !== playerColor) {
             Sentry.captureMessage('Not player\'s turn', {
                 level: 'error',
@@ -121,8 +116,9 @@ export const POST: RequestHandler = async ({ params, request }) => {
             return json({ error: resources.errors.server.validation.cannotMoveOpponent }, { status: 400 });
         }
 
-        // Check if target position is occupied by a piece of the same color
         const targetPiece = currentState.pieces.find(p => p.position === move.targetPosition);
+
+        // Check if target position is occupied by a piece of the same color
         if (targetPiece && targetPiece.color === piece.color) {
             Sentry.captureMessage('Cannot capture own piece', {
                 level: 'error',

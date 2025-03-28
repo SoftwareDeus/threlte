@@ -24,17 +24,14 @@ export const POST: RequestHandler = async ({ params, request }) => {
         return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
     }
 
-    // Only the host can set colors
     if (lobby.host !== playerName) {
         return json({ error: resources.errors.server.validation.onlyHostCanSetColors }, { status: 403 });
     }
 
-    // Validate that target player is in the lobby
     if (lobby.slots.slot1?.player !== targetPlayer && lobby.slots.slot2?.player !== targetPlayer) {
         return json({ error: resources.errors.server.validation.targetPlayerNotFound }, { status: 400 });
     }
 
-    // Create updated lobby with new color assignments
     const updatedLobby: Lobby = {
         ...lobby,
         slots: {
@@ -49,7 +46,6 @@ export const POST: RequestHandler = async ({ params, request }) => {
         }
     };
 
-    // Update the lobby
     updateLobby(lobbyId, updatedLobby);
 
     return json(updatedLobby);

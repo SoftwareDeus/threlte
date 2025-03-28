@@ -51,6 +51,5 @@ export const POST: RequestHandler = async ({ params, request }) => {
         return json({ error: resources.errors.server.validation.cannotMoveOpponent }, { status: 400 });
     }
 
-    // TODO: Implement move validation and execution
     return json({ success: true });
 }; 

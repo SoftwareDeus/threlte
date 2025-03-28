@@ -168,9 +168,7 @@
             const data = await response.json();
             lobby = data;
 
-            // If the game has started, redirect to the game
             if (data.status === 'playing') {
-                // Set the lobbyId in the store before redirecting
                 lobbyId.set(data.id);
                 goto('/game');
             }
@@ -222,7 +220,6 @@
         }
 
         try {
-            // If either player has random selected, randomize colors before starting
             if (lobby.slots.slot1?.color === ChessColor.Random || lobby.slots.slot2?.color === ChessColor.Random) {
                 await randomizePlayers();
             }
@@ -242,7 +239,6 @@
                 throw new Error(resources.errors.common.startFailed);
             }
 
-            // Set the lobbyId in the store before redirecting
             lobbyId.set(lobby.id);
             goto('/game');
         } catch (e) {

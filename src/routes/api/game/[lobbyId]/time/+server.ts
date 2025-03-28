@@ -13,14 +13,12 @@ export const POST: RequestHandler = async ({ params, request }) => {
         return json({ error: resources.errors.server.validation.missingRequiredFields }, { status: 400 });
     }
 
-    // Check if lobby exists and is in playing state
     const lobbies = getLobbies();
     const lobby = lobbies.find(l => l.id === lobbyId);
     if (!lobby || lobby.status !== 'playing') {
         return json({ error: resources.errors.server.validation.gameNotFound }, { status: 404 });
     }
 
-    // Verify player is in the game
     const playerColor = lobby.slots.slot1?.player === playerName && lobby.slots.slot1?.color ?
                        (lobby.slots.slot1.color === ChessColor.White ? ChessColor.White : ChessColor.Black) :
                        lobby.slots.slot2?.player === playerName && lobby.slots.slot2?.color ?
@@ -36,11 +34,9 @@ export const POST: RequestHandler = async ({ params, request }) => {
         return json({ error: resources.errors.server.validation.timeControlNotInitialized }, { status: 400 });
     }
 
-    // Update time for the current player
     const newTimeRemaining = { ...currentState.timeRemaining };
     newTimeRemaining[color === ChessColor.White ? 'white' : 'black'] -= 1;
 
-    // Update the game state
     updateGameState(lobbyId, {
         ...currentState,
         timeRemaining: newTimeRemaining

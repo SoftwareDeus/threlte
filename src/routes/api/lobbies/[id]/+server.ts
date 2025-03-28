@@ -65,19 +65,15 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
             return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
         }
 
-        // Get the other player's name
         const otherPlayer = lobby.slots.slot1?.player === playerName ? 
             lobby.slots.slot2?.player : 
             lobby.slots.slot1?.player;
 
-        // Remove the lobby from the array
         const updatedLobbies = currentLobbies.filter(l => l.id !== lobbyId);
         updateLobbies(updatedLobbies);
 
-        // Delete the game state if it exists
         deleteGameState(lobbyId);
 
-        // Reset the game state store for both players
         gameState.set({
             pieces: [],
             activePlayer: ChessColor.White,
