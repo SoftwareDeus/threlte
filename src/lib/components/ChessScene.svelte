@@ -9,6 +9,8 @@
 	import { playerName } from '$lib/stores/playerStore';
 	import type { GameState } from '$lib/types/chess';
 	import { ChessColor } from '$lib/types/chess';
+	import { resources } from '$lib/resources';
+	import * as Sentry from '@sentry/sveltekit';
 
 	export let lobbyId: string | null = null;
 
@@ -32,7 +34,7 @@
 
 			if (!response.ok) {
 				const data = await response.json();
-				throw new Error(data.error || 'Failed to send move to server');
+				throw new Error(data.error || resources.errors.common.updateFailed);
 			}
 
 			// Get the updated game state from the server
@@ -43,6 +45,11 @@
 				gameState.set(updatedState);
 			}
 		} catch (e) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.updateFailed
+				}
+			});
 			console.error('Error sending move to server:', e);
 		}
 	}

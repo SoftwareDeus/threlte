@@ -9,9 +9,11 @@
 	import { initialState } from '$lib/stores/gameStore';
 	import { lobbyId } from '$lib/stores/lobbyStore';
 	import { resources } from '$lib/resources';
+	import * as Sentry from '@sentry/sveltekit';
 
 	let error: string | null = null;
-	let pollInterval: number;
+	let redirectTimeout: ReturnType<typeof setTimeout>;
+	let pollInterval: ReturnType<typeof setInterval>;
 
 	async function fetchGameState() {
 		if (!$lobbyId) return;
@@ -20,44 +22,68 @@
 			const response = await fetch(`/api/game/${$lobbyId}`);
 			if (!response.ok) {
 				const data = await response.json();
-				if (data.error === 'Game not found or not started') {
-					error = resources.errors.server.validation.gameNotFound;
-					setTimeout(() => goto('/lobby'), 2000);
-					return;
-				}
 				throw new Error(data.error || resources.errors.common.fetchFailed);
 			}
-			const serverState = await response.json();
-			gameState.set(serverState);
+			const data = await response.json();
+			gameState.set(data);
 		} catch (e) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.fetchFailed
+				}
+			});
 			console.error(resources.errors.common.fetchFailed, e);
-			error = e instanceof Error ? e.message : resources.errors.common.fetchFailed;
+			error = resources.errors.common.fetchFailed;
 		}
 	}
 
 	onMount(async () => {
-		if (!$playerName) {
-			error = resources.errors.common.nameRequired;
-			setTimeout(() => goto('/'), 2000);
-			return;
-		}
+		try {
+			if (!$playerName) {
+				Sentry.captureMessage('Missing player name', {
+					level: 'error',
+					extra: {
+						errorMessage: resources.errors.common.nameRequired
+					}
+				});
+				error = resources.errors.common.nameRequired;
+				redirectTimeout = setTimeout(() => goto('/'), 2000);
+				return;
+			}
 
-		if (!$lobbyId) {
+			if (!$lobbyId) {
+				Sentry.captureMessage('Missing lobby ID', {
+					level: 'error',
+					extra: {
+						errorMessage: resources.errors.common.fetchFailed
+					}
+				});
+				error = resources.errors.common.fetchFailed;
+				redirectTimeout = setTimeout(() => goto('/lobby'), 2000);
+				return;
+			}
+
+			// Initial fetch
+			await fetchGameState();
+
+			// Set up polling every second
+			pollInterval = setInterval(fetchGameState, 1000);
+		} catch (error) {
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.fetchFailed
+				}
+			});
 			error = resources.errors.common.fetchFailed;
-			setTimeout(() => goto('/lobby'), 2000);
-			return;
 		}
-
-		// Initial fetch
-		await fetchGameState();
-
-		// Set up polling every second
-		pollInterval = setInterval(fetchGameState, 1000);
 	});
 
 	onDestroy(() => {
 		if (pollInterval) {
 			clearInterval(pollInterval);
+		}
+		if (redirectTimeout) {
+			clearTimeout(redirectTimeout);
 		}
 	});
 </script>

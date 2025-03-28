@@ -7,6 +7,7 @@
 	import { ChessColor } from "$lib/types/chess";
 	import { goto } from "$app/navigation";
 	import { resources } from '$lib/resources';
+	import * as Sentry from '@sentry/sveltekit';
 
 	let whiteTime = resources.config.time.defaultMinutes * 60;
 	let blackTime = resources.config.time.defaultMinutes * 60;
@@ -14,9 +15,9 @@
 	let blackCaptured = 0;
 	let whitePlayer = "";
 	let blackPlayer = "";
-	let lobbyInterval: number;
+	let lobbyInterval: ReturnType<typeof setInterval>;
 	let currentPlayerColor: ChessColor = ChessColor.White;
-	let timeInterval: number;
+	let timeInterval: ReturnType<typeof setInterval>;
 	let playerColor: ChessColor | null = null;
 	let isWhiteTurn: boolean = true;
 	let isGameOver: boolean = false;
@@ -58,6 +59,11 @@
 						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 null;
 		} catch (error) {
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.fetchFailed
+				}
+			});
 			console.error(resources.errors.common.fetchFailed, error);
 		}
 	}
@@ -103,6 +109,11 @@
 				blackTime = state.timeRemaining.black;
 			}
 		} catch (error) {
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.updateFailed
+				}
+			});
 			console.error(resources.errors.common.updateFailed, error);
 		}
 	}
@@ -140,6 +151,11 @@
 
 			goto('/lobby');
 		} catch (error) {
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.deleteFailed
+				}
+			});
 			console.error(resources.errors.common.deleteFailed, error);
 		}
 	}

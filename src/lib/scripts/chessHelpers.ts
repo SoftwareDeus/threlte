@@ -5,6 +5,8 @@ import { gameState } from "$lib/stores/gameStore";
 import { lobbyId } from "$lib/stores/lobbyStore";
 import { playerName } from "$lib/stores/playerStore";
 import { get } from "svelte/store";
+import * as Sentry from '@sentry/sveltekit';
+import { resources } from '$lib/resources';
 
 // Convert numeric coordinates to chess notation
 function numericToChess(x: number, y: number): string {
@@ -74,11 +76,23 @@ export async function moveTo(
 		const currentPlayerName = get(playerName);
 		
 		if (!currentLobbyId) {
+			Sentry.captureMessage('Missing lobby ID', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.server.validation.lobbyNotFound
+				}
+			});
 			console.error('Missing lobby ID');
 			return { resetSelection: () => {} };
 		}
 
 		if (!currentPlayerName) {
+			Sentry.captureMessage('Missing player name', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.server.validation.playerNameRequired
+				}
+			});
 			console.error('Missing player name');
 			return { resetSelection: () => {} };
 		}
@@ -96,8 +110,13 @@ export async function moveTo(
 
 		if (!response.ok) {
 			const error = await response.json();
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.updateFailed
+				}
+			});
 			console.error('Move failed:', error);
-			throw new Error(error.error || 'Move failed');
+			throw new Error(error.error || resources.errors.common.updateFailed);
 		}
 
 		const newState = await response.json();
@@ -105,6 +124,11 @@ export async function moveTo(
 
 		return { resetSelection: () => {} };
 	} catch (error) {
+		Sentry.captureException(error, {
+			extra: {
+				errorMessage: resources.errors.common.updateFailed
+			}
+		});
 		console.error('Failed to send move:', error);
 		throw error;
 	}

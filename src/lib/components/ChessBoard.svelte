@@ -10,6 +10,7 @@
 	import { lobbyId } from "$lib/stores/lobbyStore";
 	import { playerName } from "$lib/stores/playerStore";
 	import { resources } from "$lib/resources";
+	import * as Sentry from '@sentry/sveltekit';
 
 	let selectedPiece: ChessPiece | null = null;
 	let validMoves: [number, number][] = [];
@@ -94,6 +95,11 @@
 			// Update pieces with moves when we get the player's color
 			updatePiecesWithMoves();
 		} catch (error) {
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.fetchFailed
+				}
+			});
 			console.error("Failed to fetch player color:", error);
 		}
 	}
@@ -137,6 +143,11 @@
 			validMoves = [];
 			threatFields = [];
 		} catch (error) {
+			Sentry.captureException(error, {
+				extra: {
+					errorMessage: resources.errors.common.updateFailed
+				}
+			});
 			console.error('Move failed:', error);
 			// Reset selection on error
 			selectedPiece = null;

@@ -7,6 +7,7 @@
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
     import type { ColorSelection } from '$lib/types/chess';
+    import * as Sentry from '@sentry/sveltekit';
 
     interface Lobby {
         id: string;
@@ -26,27 +27,47 @@
 
     let lobby: Lobby | null = null;
     let error = '';
-    let interval: number;
+    let interval: ReturnType<typeof setInterval>;
     let minutes = 10;
     let increment = 0;
-    let updateTimeout: number;
+    let updateTimeout: ReturnType<typeof setTimeout>;
 
-    onMount(() => {
-        if (!$playerName) {
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
-            return;
+    onMount(async () => {
+        try {
+            if (!$playerName) {
+                Sentry.captureMessage('Missing player name', {
+                    level: 'error',
+                    extra: {
+                        errorMessage: resources.errors.common.nameRequired
+                    }
+                });
+                error = resources.errors.common.nameRequired;
+                setTimeout(() => goto('/'), 2000);
+                return;
+            }
+
+            if (!lobbyId) {
+                Sentry.captureMessage('Missing lobby ID', {
+                    level: 'error',
+                    extra: {
+                        errorMessage: resources.errors.common.genericError
+                    }
+                });
+                error = resources.errors.common.genericError;
+                setTimeout(() => goto('/lobby'), 2000);
+                return;
+            }
+
+            await fetchLobby();
+            interval = setInterval(fetchLobby, 1000);
+        } catch (error) {
+            Sentry.captureException(error, {
+                extra: {
+                    errorMessage: resources.errors.common.fetchFailed
+                }
+            });
+            error = resources.errors.common.fetchFailed;
         }
-
-        // Set the lobbyId in the store
-        lobbyId.set($page.params.id);
-        fetchLobby();
-        // Set up polling to check for lobby updates
-        interval = setInterval(fetchLobby, 1000);
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
     });
 
     function isValidTimeControl() {
@@ -58,7 +79,40 @@
     }
 
     async function updateTimeSettings() {
-        if (!$playerName || !lobby) return;
+        if (!$playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
+            error = resources.errors.common.nameRequired;
+            setTimeout(() => goto('/'), 2000);
+            return;
+        }
+
+        if (!lobbyId) {
+            Sentry.captureMessage('Missing lobby ID', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.genericError
+                }
+            });
+            error = resources.errors.common.genericError;
+            setTimeout(() => goto('/lobby'), 2000);
+            return;
+        }
+
+        if (!lobby) {
+            Sentry.captureMessage('Lobby not found', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.genericError
+                }
+            });
+            error = resources.errors.common.genericError;
+            return;
+        }
 
         const mins = Number(minutes);
         const inc = Number(increment);
@@ -88,8 +142,13 @@
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = e instanceof Error ? e.message : resources.errors.common.updateFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.updateFailed
+                }
+            });
             console.error(e);
+            error = e instanceof Error ? e.message : resources.errors.common.updateFailed;
         }
     }
 
@@ -115,13 +174,51 @@
                 goto('/game');
             }
         } catch (e) {
-            error = resources.errors.common.fetchFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.fetchFailed
+                }
+            });
             console.error(e);
+            error = resources.errors.common.fetchFailed;
         }
     }
 
     async function startGame() {
-        if (!$playerName || !lobby) return;
+        if (!$playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
+            error = resources.errors.common.nameRequired;
+            setTimeout(() => goto('/'), 2000);
+            return;
+        }
+
+        if (!lobbyId) {
+            Sentry.captureMessage('Missing lobby ID', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.genericError
+                }
+            });
+            error = resources.errors.common.genericError;
+            setTimeout(() => goto('/lobby'), 2000);
+            return;
+        }
+
+        if (!lobby) {
+            Sentry.captureMessage('Lobby not found', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.genericError
+                }
+            });
+            error = resources.errors.common.genericError;
+            return;
+        }
 
         try {
             // If either player has random selected, randomize colors before starting
@@ -148,13 +245,51 @@
             lobbyId.set(lobby.id);
             goto('/game');
         } catch (e) {
-            error = resources.errors.common.startFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.startFailed
+                }
+            });
             console.error(e);
+            error = resources.errors.common.startFailed;
         }
     }
 
     async function randomizePlayers() {
-        if (!$playerName || !lobby) return;
+        if (!$playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
+            error = resources.errors.common.nameRequired;
+            setTimeout(() => goto('/'), 2000);
+            return;
+        }
+
+        if (!lobbyId) {
+            Sentry.captureMessage('Missing lobby ID', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.genericError
+                }
+            });
+            error = resources.errors.common.genericError;
+            setTimeout(() => goto('/lobby'), 2000);
+            return;
+        }
+
+        if (!lobby) {
+            Sentry.captureMessage('Lobby not found', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.genericError
+                }
+            });
+            error = resources.errors.common.genericError;
+            return;
+        }
 
         try {
             const response = await fetch(`/api/lobbies/${lobby.id}/randomize`, {
@@ -174,8 +309,13 @@
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = resources.errors.common.updateFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.updateFailed
+                }
+            });
             console.error(e);
+            error = resources.errors.common.updateFailed;
         }
     }
 
@@ -208,8 +348,13 @@
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = resources.errors.common.updateFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.updateFailed
+                }
+            });
             console.error(e);
+            error = resources.errors.common.updateFailed;
         }
     }
 
@@ -233,8 +378,13 @@
 
             goto('/lobby');
         } catch (e) {
-            error = resources.errors.common.deleteFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.deleteFailed
+                }
+            });
             console.error(e);
+            error = resources.errors.common.deleteFailed;
         }
     }
 

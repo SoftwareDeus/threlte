@@ -4,24 +4,55 @@
     import { initialState } from '$lib/stores/gameStore';
     import { playerName } from '$lib/stores/playerStore';
     import { resources } from '$lib/resources';
+    import * as Sentry from '@sentry/sveltekit';
 
     function startNewGame() {
-        if (!$playerName) {
-            error = resources.errors.common.nameRequired;
-            return;
+        try {
+            if (!$playerName) {
+                Sentry.captureMessage('Missing player name', {
+                    level: 'error',
+                    extra: {
+                        errorMessage: resources.errors.common.nameRequired
+                    }
+                });
+                error = resources.errors.common.nameRequired;
+                return;
+            }
+            // Reset game state to initial state
+            gameState.set(initialState);
+            // Navigate to the game
+            goto('/game');
+        } catch (error) {
+            Sentry.captureException(error, {
+                extra: {
+                    errorMessage: resources.errors.common.startFailed
+                }
+            });
+            error = resources.errors.common.startFailed;
         }
-        // Reset game state to initial state
-        gameState.set(initialState);
-        // Navigate to the game
-        goto('/game');
     }
 
     function goToLobby() {
-        if (!$playerName) {
-            error = resources.errors.common.nameRequired;
-            return;
+        try {
+            if (!$playerName) {
+                Sentry.captureMessage('Missing player name', {
+                    level: 'error',
+                    extra: {
+                        errorMessage: resources.errors.common.nameRequired
+                    }
+                });
+                error = resources.errors.common.nameRequired;
+                return;
+            }
+            goto('/lobby');
+        } catch (error) {
+            Sentry.captureException(error, {
+                extra: {
+                    errorMessage: resources.errors.common.joinFailed
+                }
+            });
+            error = resources.errors.common.joinFailed;
         }
-        goto('/lobby');
     }
 
     let error = '';

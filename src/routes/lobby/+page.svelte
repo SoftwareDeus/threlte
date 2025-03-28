@@ -5,6 +5,7 @@
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
+    import * as Sentry from '@sentry/sveltekit';
 
     interface Lobby {
         id: string;
@@ -34,12 +35,27 @@
     let deleteConfirmId: string | null = null;
 
     onMount(async () => {
-        if (!$playerName) {
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
-            return;
+        try {
+            if (!$playerName) {
+                Sentry.captureMessage('Missing player name', {
+                    level: 'error',
+                    extra: {
+                        errorMessage: resources.errors.common.nameRequired
+                    }
+                });
+                error = resources.errors.common.nameRequired;
+                setTimeout(() => goto('/'), 2000);
+                return;
+            }
+            await fetchLobbies();
+        } catch (error) {
+            Sentry.captureException(error, {
+                extra: {
+                    errorMessage: resources.errors.common.fetchFailed
+                }
+            });
+            error = resources.errors.common.fetchFailed;
         }
-        await fetchLobbies();
     });
 
     async function fetchLobbies() {
@@ -50,19 +66,36 @@
             }
             lobbies = await response.json();
         } catch (e) {
-            error = resources.errors.common.fetchFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.fetchFailed
+                }
+            });
             console.error(e);
+            throw new Error(resources.errors.common.fetchFailed);
         }
     }
 
     async function createLobby() {
         if (!$playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
             error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
         }
 
         if (!newLobbyName.trim()) {
+            Sentry.captureMessage('Missing lobby name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.lobbyNameRequired
+                }
+            });
             error = resources.errors.common.lobbyNameRequired;
             return;
         }
@@ -87,13 +120,24 @@
             lobbies = [...lobbies, newLobby];
             goto(`/lobby/${newLobby.id}`);
         } catch (e) {
-            error = resources.errors.common.createFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.createFailed
+                }
+            });
             console.error(e);
+            throw new Error(resources.errors.common.createFailed);
         }
     }
 
     async function joinLobby(lobbyId: string) {
         if (!$playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
             error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
@@ -118,13 +162,24 @@
             lobbies = lobbies.map(l => l.id === lobbyId ? updatedLobby : l);
             goto(`/lobby/${lobbyId}`);
         } catch (e) {
-            error = resources.errors.common.joinFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.joinFailed
+                }
+            });
             console.error(e);
+            throw new Error(resources.errors.common.joinFailed);
         }
     }
 
     async function startGame(id: string) {
         if (!$playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
             error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
@@ -150,13 +205,24 @@
             lobbyId.set(id);
             goto(`/game/${id}`);
         } catch (e) {
-            error = resources.errors.common.startFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.startFailed
+                }
+            });
             console.error(e);
+            throw new Error(resources.errors.common.startFailed);
         }
     }
 
     async function deleteLobby() {
         if (!$playerName || !deleteConfirmId) {
+            Sentry.captureMessage('Missing player name or lobby ID', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.common.nameRequired
+                }
+            });
             error = resources.errors.common.nameRequired;
             setTimeout(() => goto('/'), 2000);
             return;
@@ -180,8 +246,13 @@
             deleteConfirmId = null;
             await fetchLobbies();
         } catch (e) {
-            error = resources.errors.common.deleteFailed;
+            Sentry.captureException(e, {
+                extra: {
+                    errorMessage: resources.errors.common.deleteFailed
+                }
+            });
             console.error(e);
+            throw new Error(resources.errors.common.deleteFailed);
         }
     }
 

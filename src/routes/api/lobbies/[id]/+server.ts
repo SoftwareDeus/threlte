@@ -4,71 +4,101 @@ import { getLobbies, updateLobbies } from '$lib/scripts/lobbyStore';
 import { deleteGameState } from '$lib/scripts/serverGameState';
 import { gameState } from '$lib/scripts/gameState';
 import { ChessColor } from '$lib/types/chess';
+import * as Sentry from '@sentry/sveltekit';
+import { resources } from '$lib/resources';
 
 export const GET: RequestHandler = async ({ params }) => {
-    const lobbyId = params.id;
-    const currentLobbies = getLobbies();
-    const lobby = currentLobbies.find(l => l.id === lobbyId);
+    try {
+        const lobbyId = params.id;
+        const currentLobbies = getLobbies();
+        const lobby = currentLobbies.find(l => l.id === lobbyId);
 
-    if (!lobby) {
-        return json({ error: 'Lobby not found' }, { status: 404 });
+        if (!lobby) {
+            Sentry.captureMessage('Lobby not found', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.server.validation.lobbyNotFound,
+                    lobbyId
+                }
+            });
+            return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
+        }
+
+        return json(lobby);
+    } catch (error) {
+        Sentry.captureException(error, {
+            extra: {
+                errorMessage: resources.errors.common.fetchFailed
+            }
+        });
+        return json({ error: resources.errors.common.fetchFailed }, { status: 500 });
     }
-
-    return json(lobby);
 };
 
 export const DELETE: RequestHandler = async ({ params, request }) => {
-    console.log('Delete request received for lobby:', params.id);
-    
-    const lobbyId = params.id;
-    const body = await request.json();
-    console.log('Delete request body:', body);
-    
-    const { playerName } = body;
+    try {
+        const lobbyId = params.id;
+        const body = await request.json();
+        const { playerName } = body;
 
-    if (!playerName) {
-        console.log('No player name provided');
-        return json({ error: 'Player name is required' }, { status: 400 });
+        if (!playerName) {
+            Sentry.captureMessage('Missing player name', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.server.validation.playerNameRequired
+                }
+            });
+            return json({ error: resources.errors.server.validation.playerNameRequired }, { status: 400 });
+        }
+
+        const currentLobbies = getLobbies();
+        const lobby = currentLobbies.find(l => l.id === lobbyId);
+        
+        if (!lobby) {
+            Sentry.captureMessage('Lobby not found', {
+                level: 'error',
+                extra: {
+                    errorMessage: resources.errors.server.validation.lobbyNotFound,
+                    lobbyId
+                }
+            });
+            return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
+        }
+
+        // Get the other player's name
+        const otherPlayer = lobby.slots.slot1?.player === playerName ? 
+            lobby.slots.slot2?.player : 
+            lobby.slots.slot1?.player;
+
+        // Remove the lobby from the array
+        const updatedLobbies = currentLobbies.filter(l => l.id !== lobbyId);
+        updateLobbies(updatedLobbies);
+
+        // Delete the game state if it exists
+        deleteGameState(lobbyId);
+
+        // Reset the game state store for both players
+        gameState.set({
+            pieces: [],
+            activePlayer: ChessColor.White,
+            capturedPieces: {
+                white: [],
+                black: []
+            },
+            status: null,
+            reset: () => {}
+        });
+
+        return json({ 
+            success: true,
+            otherPlayer
+        });
+    } catch (error) {
+        Sentry.captureException(error, {
+            extra: {
+                errorMessage: resources.errors.common.deleteFailed
+            }
+        });
+        return json({ error: resources.errors.common.deleteFailed }, { status: 500 });
     }
-
-    const currentLobbies = getLobbies();
-    console.log('Current lobbies:', currentLobbies);
-    
-    const lobby = currentLobbies.find(l => l.id === lobbyId);
-    if (!lobby) {
-        console.log('Lobby not found');
-        return json({ error: 'Lobby not found' }, { status: 404 });
-    }
-
-    // Get the other player's name
-    const otherPlayer = lobby.slots.slot1?.player === playerName ? 
-        lobby.slots.slot2?.player : 
-        lobby.slots.slot1?.player;
-
-    // Remove the lobby from the array
-    const updatedLobbies = currentLobbies.filter(l => l.id !== lobbyId);
-    console.log('Updated lobbies:', updatedLobbies);
-    
-    updateLobbies(updatedLobbies);
-
-    // Delete the game state if it exists
-    deleteGameState(lobbyId);
-    console.log('Game state deleted');
-
-    // Reset the game state store for both players
-    gameState.set({
-        pieces: [],
-        activePlayer: ChessColor.White,
-        capturedPieces: {
-            white: [],
-            black: []
-        },
-        status: null,
-        reset: () => {}
-    });
-
-    return json({ 
-        success: true,
-        otherPlayer
-    });
 }; 
