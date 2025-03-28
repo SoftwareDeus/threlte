@@ -17,8 +17,14 @@
     let testStatus = '';
 
     $: isAuthenticated = !!$authStore.user;
+    $: isLoading = $authStore.loading;
 
     onMount(async () => {
+        // Wait for initial auth check to complete
+        if (isLoading) {
+            return;
+        }
+
         // Redirect to auth page if not authenticated
         if (!isAuthenticated) {
             await goto('/auth');
@@ -78,59 +84,69 @@
     }
 </script>
 
-<div class="w-screen h-screen flex flex-col justify-center items-center bg-[#1a1a1a] text-white font-sans">
-    <h1 class="text-5xl mb-8 text-white">{resources.ui.mainMenu.title}</h1>
-    
-    <div class="flex flex-col gap-4">
-        {#if isAuthenticated}
-            <button 
-                on:click={handleStartGame}
-                class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
-            >
-                {resources.ui.buttons.localGame}
-            </button>
-            <button 
-                on:click={handleGoToLobby}
-                class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
-            >
-                {resources.ui.buttons.multiplayer}
-            </button>
-            <button 
-                on:click={toggleProfile}
-                class="px-8 py-4 text-xl bg-[#2196F3] text-white rounded cursor-pointer transition-all hover:bg-[#1976D2] min-w-[200px]"
-            >
-                {showProfile ? 'Hide Profile' : 'Show Profile'}
-            </button>
-            <button 
-                on:click={handleSignOut}
-                class="px-8 py-4 text-xl bg-[#f44336] text-white rounded cursor-pointer transition-all hover:bg-[#d32f2f] min-w-[200px]"
-            >
-                Sign Out
-            </button>
-        {/if}
-    </div>
-
-    {#if error}
-        <div class="mt-4 px-4 py-2 text-[#ff4444] bg-[#ff4444]/10 rounded">
-            {error}
+<div class="min-h-screen bg-[#1a1a1a] flex flex-col">
+    {#if isLoading}
+        <div class="flex-1 flex items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
         </div>
-    {/if}
-
-    {#if connectionStatus}
-        <div class="mt-4 px-4 py-2 {connectionStatus.includes('Connected') ? 'text-[#4CAF50] bg-[#4CAF50]/10' : 'text-[#ff4444] bg-[#ff4444]/10'} rounded">
-            {connectionStatus}
+    {:else if !isAuthenticated}
+        <div class="flex-1 flex items-center justify-center">
+            <div class="text-white">Redirecting to login...</div>
         </div>
-    {/if}
+    {:else}
+        <div class="w-screen h-screen flex flex-col justify-center items-center bg-[#1a1a1a] text-white font-sans">
+            <h1 class="text-5xl mb-8 text-white">{resources.ui.mainMenu.title}</h1>
+            
+            <div class="flex flex-col gap-4">
+                <button 
+                    on:click={handleStartGame}
+                    class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
+                >
+                    {resources.ui.buttons.localGame}
+                </button>
+                <button 
+                    on:click={handleGoToLobby}
+                    class="px-8 py-4 text-xl bg-[#4CAF50] text-white rounded cursor-pointer transition-all hover:bg-[#45a049] min-w-[200px]"
+                >
+                    {resources.ui.buttons.multiplayer}
+                </button>
+                <button 
+                    on:click={toggleProfile}
+                    class="px-8 py-4 text-xl bg-[#2196F3] text-white rounded cursor-pointer transition-all hover:bg-[#1976D2] min-w-[200px]"
+                >
+                    {showProfile ? 'Hide Profile' : 'Show Profile'}
+                </button>
+                <button 
+                    on:click={handleSignOut}
+                    class="px-8 py-4 text-xl bg-[#f44336] text-white rounded cursor-pointer transition-all hover:bg-[#d32f2f] min-w-[200px]"
+                >
+                    Sign Out
+                </button>
+            </div>
 
-    {#if testStatus}
-        <div class="mt-4 px-4 py-2 {testStatus.includes('successfully') ? 'text-[#4CAF50] bg-[#4CAF50]/10' : 'text-[#ff4444] bg-[#ff4444]/10'} rounded">
-            {testStatus}
-        </div>
-    {/if}
+            {#if error}
+                <div class="mt-4 px-4 py-2 text-[#ff4444] bg-[#ff4444]/10 rounded">
+                    {error}
+                </div>
+            {/if}
 
-    {#if showProfile}
-        <div class="mt-8 w-full max-w-md">
-            <PlayerProfile />
+            {#if connectionStatus}
+                <div class="mt-4 px-4 py-2 {connectionStatus.includes('Connected') ? 'text-[#4CAF50] bg-[#4CAF50]/10' : 'text-[#ff4444] bg-[#ff4444]/10'} rounded">
+                    {connectionStatus}
+                </div>
+            {/if}
+
+            {#if testStatus}
+                <div class="mt-4 px-4 py-2 {testStatus.includes('successfully') ? 'text-[#4CAF50] bg-[#4CAF50]/10' : 'text-[#ff4444] bg-[#ff4444]/10'} rounded">
+                    {testStatus}
+                </div>
+            {/if}
+
+            {#if showProfile}
+                <div class="mt-8 w-full max-w-md">
+                    <PlayerProfile />
+                </div>
+            {/if}
         </div>
     {/if}
 </div> 

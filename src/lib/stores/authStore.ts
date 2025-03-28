@@ -17,23 +17,62 @@ function createAuthStore() {
         error: null
     })
 
-    // Initialize auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        set({
-            user: session?.user ?? null,
-            loading: false,
-            error: null
-        })
-    })
+    // Initialize auth state and set up session refresh
+    async function initializeAuth() {
+        try {
+            // Get initial session
+            const { data: { session }, error } = await supabase.auth.getSession()
+            if (error) throw error
 
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange((_event, session) => {
-        set({
-            user: session?.user ?? null,
-            loading: false,
-            error: null
-        })
-    })
+            // Set initial state
+            set({
+                user: session?.user ?? null,
+                loading: false,
+                error: null
+            })
+
+            // Set up session refresh
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('Auth state changed:', event)
+                
+                if (event === 'SIGNED_IN') {
+                    set({
+                        user: session?.user ?? null,
+                        loading: false,
+                        error: null
+                    })
+                } else if (event === 'SIGNED_OUT') {
+                    set({
+                        user: null,
+                        loading: false,
+                        error: null
+                    })
+                    playerStore.clearProfile()
+                } else if (event === 'TOKEN_REFRESHED') {
+                    set({
+                        user: session?.user ?? null,
+                        loading: false,
+                        error: null
+                    })
+                }
+            })
+
+            // Clean up subscription on store destruction
+            return () => {
+                subscription.unsubscribe()
+            }
+        } catch (error) {
+            console.error('Error initializing auth:', error)
+            set({
+                user: null,
+                loading: false,
+                error: error instanceof Error ? error.message : 'Failed to initialize auth'
+            })
+        }
+    }
+
+    // Start initialization
+    initializeAuth()
 
     return {
         subscribe,
@@ -64,17 +103,17 @@ function createAuthStore() {
             return { success: true }
         },
         signOut: async () => {
-            update(state => ({ ...state, loading: true, error: null }));
+            update(state => ({ ...state, loading: true, error: null }))
             try {
-                const result = await supabase.auth.signOut();
-                if (result.error) throw result.error;
-                playerStore.clearProfile();
-                set({ user: null, loading: false, error: null });
-                return { error: null };
+                const result = await supabase.auth.signOut()
+                if (result.error) throw result.error
+                playerStore.clearProfile()
+                set({ user: null, loading: false, error: null })
+                return { error: null }
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to sign out';
-                set({ user: null, loading: false, error: errorMessage });
-                return { error: errorMessage };
+                const errorMessage = error instanceof Error ? error.message : 'Failed to sign out'
+                set({ user: null, loading: false, error: errorMessage })
+                return { error: errorMessage }
             }
         },
         resetPassword: async (email: string) => {
