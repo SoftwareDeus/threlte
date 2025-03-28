@@ -1,0 +1,126 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure Rules
+
+## Project Overview
+- Name: Threlte Chess Game
+- Type: SvelteKit Application
+- Description: A multiplayer chess game built with SvelteKit and Three.js (Threlte)
+
+## Architecture Layers
+
+### Presentation Layer (@src/routes)
+- Use `+page.svelte` for main route components
+- Use `+layout.svelte` for shared layouts
+- Group related routes in subdirectories
+- Example structure:
+  ```
+  routes/
+  ├── game/
+  │   └── +page.svelte
+  ├── lobby/
+  │   ├── +page.svelte
+  │   └── [id]/
+  └── +layout.svelte
+  ```
+
+### Components (@src/lib/components)
+- Group components by feature/domain
+- Use PascalCase for component names
+- Include TypeScript types for props
+- Example: `ChessBoard.svelte`, `PlayerInfo.svelte`
+
+### Services (@src/lib/services)
+- One service per domain
+- Use async/await for API calls
+- Include error handling with Sentry
+- Example: `lobbyService.ts`, `gameService.ts`
+
+### Stores (@src/lib/stores)
+- One store per domain
+- Use TypeScript for store types
+- Include proper typing for store values
+- Example: `playerStore.ts`, `lobbyStore.ts`
+
+### Types (@src/lib/types)
+- Group types by domain
+- Use interfaces for complex types
+- Export all types
+- Example: `chess.ts`, `player.ts`
+
+### Resources (@src/lib/resources)
+- Organize by domain
+- Use TypeScript for type safety
+- Include error messages and constants
+- Example: `errors.ts`, `constants.ts`
+
+## Naming Conventions
+- Components: PascalCase (e.g., `ChessBoard.svelte`)
+- Services: camelCase (e.g., `lobbyService.ts`)
+- Stores: camelCase (e.g., `playerStore.ts`)
+- Types: PascalCase (e.g., `ChessMove.ts`)
+- Files: kebab-case (e.g., `error-handling.ts`)
+
+## Error Handling
+- Framework: Sentry
+- Use `Sentry.captureException` for errors
+- Use `Sentry.captureMessage` for warnings
+- Include extra context in error reports
+- Example:
+  ```typescript
+  try {
+    // code
+  } catch (e) {
+    Sentry.captureException(e, {
+      extra: {
+        errorMessage: resources.errors.common.fetchFailed
+      }
+    });
+  }
+  ```
+
+## Styling
+- Framework: Tailwind CSS
+- Use utility classes
+- Group related styles
+- Follow mobile-first approach
+- Example:
+  ```svelte
+  <div class="flex flex-col md:flex-row items-center justify-between p-4">
+  ```
+
+## TypeScript
+- Use strict type checking
+- Define interfaces for complex types
+- Use type inference where possible
+- Example:
+  ```typescript
+  interface ChessMove {
+    from: Position;
+    to: Position;
+    piece: PieceType;
+    timestamp: Date;
+  }
+  ```
+
+## Game-Specific Features
+- Multiplayer chess game
+- Lobby system
+- Real-time game updates
+- Player management
+
+### Required Components
+- Chess board
+- Game controls
+- Player information
+- Chat system
+
+## Dependencies
+- svelte
+- sveltekit
+- three
+- @sentry/sveltekit
+- tailwindcss
