@@ -10,7 +10,7 @@
     export let onColorChange: (color: ChessColor) => void;
 </script>
 
-<div class="p-4 rounded-lg slot-bg" class:white-slot={color === ChessColor.White} class:black-slot={color === ChessColor.Black}>
+<div class="p-4 rounded-lg bg-black/20 {color === ChessColor.White ? 'bg-white/10' : color === ChessColor.Black ? 'bg-black/20' : ''}">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
             <span class="text-lg">{resources.ui.lobby.players[`slot${slotNumber}`]}:</span>
@@ -58,18 +58,4 @@
             </div>
         {/if}
     </div>
-</div>
-
-<style>
-    .slot-bg {
-        background-color: rgba(0, 0, 0, 0.2);
-    }
-
-    .white-slot {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .black-slot {
-        background-color: rgba(0, 0, 0, 0.2);
-    }
-</style> 
+</div> 

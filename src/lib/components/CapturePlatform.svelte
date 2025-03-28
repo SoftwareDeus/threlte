@@ -6,7 +6,6 @@
 	import { ChessColor } from "$lib/types/chess";
 
 	export let color: ChessColor;
-	export let side: 'left' | 'right';
 
 	$: capturedPieces = $gameState.capturedPieces[color === ChessColor.White ? 'white' : 'black'];
 

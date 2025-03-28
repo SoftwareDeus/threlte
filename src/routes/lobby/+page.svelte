@@ -277,7 +277,7 @@
     }
 </script>
 
-<div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
+<div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/10 [&::-webkit-scrollbar-track]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb:hover]:bg-white/30">
     <div class="max-w-4xl mx-auto">
         <h1 class="text-4xl font-bold mb-8">{resources.ui.lobby.title}</h1>
 
@@ -309,24 +309,4 @@
             </button>
         </div>
     {/if}
-</div>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-</style> 
+</div> 

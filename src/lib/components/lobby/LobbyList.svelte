@@ -46,7 +46,7 @@
     }
 </script>
 
-<div class="space-y-4 max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar">
+<div class="space-y-4 max-h-[60vh] overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/10 [&::-webkit-scrollbar-track]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb:hover]:bg-white/30">
     {#each lobbies as lobby, index (lobby.id)}
         {#if deleteConfirmId === lobby.id}
             <div class="bg-white/10 rounded-lg p-4 h-[100px] flex items-center">
@@ -149,24 +149,4 @@
             </div>
         {/if}
     {/each}
-</div>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-</style> 
+</div> 
