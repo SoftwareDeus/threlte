@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { Lobby } from '$lib/types';
+import type { Lobby } from '$lib/types/chess';
+import { ChessColor } from '$lib/types/chess';
 import { getLobbies, updateLobbies } from '$lib/scripts/lobbyStore';
 import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@sentry/sveltekit';
@@ -46,10 +47,7 @@ export const POST: RequestHandler = async ({ request }) => {
             slots: {
                 slot1: {
                     player: host,
-                    color: shouldSlot1BeWhite ? 'white' : 'black'
-                },
-                slot2: {
-                    color: shouldSlot1BeWhite ? 'black' : 'white'
+                    color: shouldSlot1BeWhite ? ChessColor.White : ChessColor.Black
                 }
             }
         };

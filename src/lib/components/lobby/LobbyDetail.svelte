@@ -48,41 +48,24 @@
         </button>
     </div>
 
-    <div class="space-y-8">
-        <!-- Players -->
-        <div class="bg-white/10 rounded-lg p-6">
-            <h2 class="text-2xl font-bold mb-4">{resources.ui.lobby.players.title}</h2>
-            <div class="space-y-4">
-                <PlayerSlot
-                    slotNumber={1}
-                    player={lobby.slots.slot1?.player}
-                    color={lobby.slots.slot1?.color}
-                    isHost={isHost}
-                    onColorChange={(color) => onColorChange(1, color)}
-                />
-
-                <PlayerSlot
-                    slotNumber={2}
-                    player={lobby.slots.slot2?.player}
-                    color={lobby.slots.slot2?.color}
-                    isHost={isHost}
-                    onColorChange={(color) => onColorChange(2, color)}
-                />
-
-                {#if isHost && isFull()}
-                    <div class="flex justify-end mt-4">
-                        <button
-                            on:click={onRandomize}
-                            class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                        >
-                            {resources.ui.buttons.randomize}
-                        </button>
-                    </div>
-                {/if}
-            </div>
+    <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <PlayerSlot
+                slotNumber={1}
+                player={lobby.slots.slot1?.player}
+                color={lobby.slots.slot1?.color}
+                isHost={isHost}
+                onColorChange={(color) => onColorChange(1, color)}
+            />
+            <PlayerSlot
+                slotNumber={2}
+                player={lobby.slots.slot2?.player}
+                color={lobby.slots.slot2?.color}
+                isHost={isHost}
+                onColorChange={(color) => onColorChange(2, color)}
+            />
         </div>
 
-        <!-- Time Control -->
         <TimeControlSettings
             isHost={isHost}
             minutes={minutes}
@@ -92,7 +75,6 @@
             currentTimeControl={lobby.timeControl}
         />
 
-        <!-- Action Buttons -->
         <div class="flex justify-end gap-4">
             <button
                 on:click={onDelete}

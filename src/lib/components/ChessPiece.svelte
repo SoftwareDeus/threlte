@@ -4,7 +4,7 @@
 	import { ChessPieceType, ChessColor } from "$lib/types/chess";
 	import { resources } from "$lib/resources";
 
-	export let isUnderAttack: boolean = false; // Neuer Zustand für Angriffe
+	export let isUnderAttack: boolean = false;
 	export let type: ChessPieceType = ChessPieceType.Pawn;
 	export let position: [number, number, number] = [0, 0, 0];
 	export let color: ChessColor = ChessColor.White;

@@ -9,10 +9,18 @@
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import * as Sentry from '@sentry/sveltekit';
+    import { ChessColor } from '$lib/types/chess';
 
     let error: string | null = null;
     let redirectTimeout: ReturnType<typeof setTimeout>;
     let pollInterval: ReturnType<typeof setInterval>;
+    let isGameOver = false;
+    let winner: ChessColor | undefined;
+
+    gameState.subscribe((state) => {
+        isGameOver = state.gameOver ?? false;
+        winner = state.winner;
+    });
 
     async function fetchGameState() {
         if (!$lobbyId) return;
@@ -33,6 +41,35 @@
             });
             console.error(resources.errors.common.fetchFailed, e);
             error = resources.errors.common.fetchFailed;
+        }
+    }
+
+    async function handleGameOver() {
+        const currentLobbyId = $lobbyId;
+        if (!currentLobbyId) return;
+
+        try {
+            const response = await fetch(`/api/lobbies/${currentLobbyId}/end`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    winner: winner,
+                    playerName: $playerName
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(resources.errors.common.updateFailed);
+            }
+        } catch (error) {
+            Sentry.captureException(error, {
+                extra: {
+                    errorMessage: resources.errors.common.updateFailed
+                }
+            });
+            console.error('Failed to end game:', error);
         }
     }
 
@@ -67,6 +104,10 @@
 
             // Set up polling every second
             pollInterval = setInterval(fetchGameState, 1000);
+
+            if (isGameOver) {
+                await handleGameOver();
+            }
         } catch (error) {
             Sentry.captureException(error, {
                 extra: {

@@ -18,9 +18,7 @@
                 error = resources.errors.common.nameRequired;
                 return;
             }
-            // Reset game state to initial state
             gameState.set(initialState);
-            // Navigate to the game
             goto('/game');
         } catch (error) {
             Sentry.captureException(error, {
