@@ -36,16 +36,17 @@ export class PlayerService {
         }
     }
 
-    static async createProfile(userId: string, username: string, avatar_url?: string): Promise<PlayerProfile | null> {
-        console.log('Creating profile for user:', userId, 'with username:', username);
+    static async createProfile(authUserId: string, username: string, displayName: string, avatar_url?: string): Promise<PlayerProfile | null> {
+        console.log('Creating profile for user:', authUserId, 'with username:', username);
         
         // Check if profile already exists
-        const existingProfile = await this.getProfile(userId);
+        const existingProfile = await this.getProfile(authUserId);
         if (existingProfile) {
             console.log('Profile already exists, updating instead');
             // If profile exists, update it instead of creating a new one
-            return this.updateProfile(userId, {
+            return this.updateProfile(authUserId, {
                 username,
+                display_name: displayName,
                 avatar_url,
                 last_seen: new Date().toISOString()
             });
@@ -73,8 +74,9 @@ export class PlayerService {
             .from('player_profiles')
             .insert([
                 {
-                    auth_user_id: userId,
+                    auth_user_id: authUserId,
                     username,
+                    display_name: displayName,
                     avatar_url,
                     rating: 1000, // Default rating
                     games_played: 0,
@@ -85,14 +87,14 @@ export class PlayerService {
                 }
             ])
             .select()
-            .single()
+            .single();
 
         if (error) {
-            console.error('Error creating profile:', error)
-            return null
+            console.error('Error creating profile:', error);
+            return null;
         }
 
-        return data
+        return data;
     }
 
     static async getProfile(userId: string): Promise<PlayerProfile | null> {

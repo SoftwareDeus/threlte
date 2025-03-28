@@ -25,8 +25,8 @@
             return;
         }
 
-        // Redirect to auth page if not authenticated
-        if (!isAuthenticated) {
+        // Only redirect if we're not already on the auth page
+        if (!isAuthenticated && window.location.pathname !== '/auth') {
             await goto('/auth');
             return;
         }
@@ -79,7 +79,7 @@
         if (result.error) {
             error = result.error;
         } else {
-            await goto('/');
+            await goto('/auth');
         }
     }
 </script>

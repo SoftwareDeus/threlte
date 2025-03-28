@@ -32,8 +32,6 @@
                     display_name: displayName,
                     avatar_url: avatarUrl
                 });
-            } else {
-                await playerStore.createProfile(displayName, avatarUrl);
             }
             goto('/');
         } catch (e) {
@@ -46,7 +44,7 @@
 
 <div class="min-h-screen bg-[#1a1a1a] flex flex-col justify-center items-center p-4">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Set Up Your Profile</h2>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Account Settings</h2>
 
         <form on:submit|preventDefault={handleSubmit} class="space-y-4">
             <div>
@@ -93,15 +91,15 @@
                         Saving...
                     </span>
                 {:else}
-                    Save Profile
+                    Save Changes
                 {/if}
             </button>
         </form>
 
-        <div class="mt-8 pt-8 border-t border-gray-700">
+        <div class="mt-4">
             <button
                 on:click={() => showDeleteForm = !showDeleteForm}
-                class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                class="w-full text-red-600 hover:text-red-700 font-semibold py-2 px-4 rounded-lg transition-colors"
             >
                 {showDeleteForm ? 'Cancel' : 'Delete Account'}
             </button>

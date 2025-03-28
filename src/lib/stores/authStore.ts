@@ -76,18 +76,18 @@ function createAuthStore() {
 
     return {
         subscribe,
-        signUp: async (email: string, password: string, username: string) => {
+        signUp: async (email: string, password: string, displayName: string) => {
             update(state => ({ ...state, loading: true, error: null }))
-            const result = await AuthService.signUp(email, password, username)
+            const result = await AuthService.signUp(email, password, displayName)
             if (!result.success) {
                 update(state => ({
                     ...state,
                     loading: false,
                     error: result.error instanceof Error ? result.error.message : 'An unknown error occurred'
                 }))
-                return false
+                return { success: false, error: result.error }
             }
-            return true
+            return { success: true }
         },
         signIn: async (email: string, password: string) => {
             update(state => ({ ...state, loading: true, error: null }))
@@ -115,6 +115,20 @@ function createAuthStore() {
                 set({ user: null, loading: false, error: errorMessage })
                 return { error: errorMessage }
             }
+        },
+        deleteAccount: async () => {
+            update(state => ({ ...state, loading: true, error: null }))
+            const result = await AuthService.deleteAccount()
+            if (!result.success) {
+                update(state => ({
+                    ...state,
+                    loading: false,
+                    error: result.error || 'Failed to delete account'
+                }))
+                return { success: false, error: result.error }
+            }
+            set({ user: null, loading: false, error: null })
+            return { success: true }
         },
         resetPassword: async (email: string) => {
             update(state => ({ ...state, loading: true, error: null }))

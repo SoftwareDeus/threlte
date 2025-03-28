@@ -2,7 +2,7 @@
     import { authStore } from '$lib/stores/authStore';
     import { goto } from '$app/navigation';
 
-    let identifier = ''; // Can be email or username
+    let email = '';
     let password = '';
     let loading = false;
     let error: string | null = null;
@@ -11,14 +11,7 @@
         loading = true;
         error = null;
 
-        // Only allow email-based login
-        if (!identifier.includes('@')) {
-            error = 'Please use your email address to log in';
-            loading = false;
-            return;
-        }
-
-        const result = await authStore.signIn(identifier, password);
+        const result = await authStore.signIn(email, password);
         
         if (result.success) {
             goto('/'); // Go to home page after successful login
@@ -36,15 +29,15 @@
     <form on:submit|preventDefault={handleSubmit} class="space-y-4">
         <div class="space-y-6">
             <div>
-                <label for="identifier" class="block text-sm font-medium text-white mb-2">
-                    Username or Email
+                <label for="email" class="block text-sm font-medium text-white mb-2">
+                    Email
                 </label>
                 <input
-                    type="text"
-                    id="identifier"
-                    bind:value={identifier}
+                    type="email"
+                    id="email"
+                    bind:value={email}
                     class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent"
-                    placeholder="Enter your username or email"
+                    placeholder="Enter your email"
                     required
                 />
             </div>

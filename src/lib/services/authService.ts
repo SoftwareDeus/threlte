@@ -3,15 +3,15 @@ import { playerStore } from '../stores/playerStore'
 import { PlayerService } from './playerService'
 
 export class AuthService {
-    static async signUp(email: string, password: string, username: string): Promise<{ success: boolean; error?: string }> {
+    static async signUp(email: string, password: string, displayName: string): Promise<{ success: boolean; error?: string }> {
         try {
-            console.log('Starting signup process for username:', username);
+            console.log('Starting signup process for email:', email);
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
-                        username
+                        display_name: displayName
                     }
                 }
             });
@@ -23,8 +23,8 @@ export class AuthService {
 
             if (data.user) {
                 console.log('User created successfully, creating profile for ID:', data.user.id);
-                // Create profile with the user's ID
-                const profile = await PlayerService.createProfile(data.user.id, username);
+                // Create profile with the user's ID and display name
+                const profile = await PlayerService.createProfile(data.user.id, email.split('@')[0], displayName);
                 if (!profile) {
                     console.error('Failed to create profile during signup');
                     throw new Error('Failed to create profile');
@@ -45,8 +45,6 @@ export class AuthService {
     static async signIn(email: string, password: string) {
         try {
             console.log('Starting sign in process');
-            
-            // First try to sign in with email
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password
@@ -71,49 +69,13 @@ export class AuthService {
                 .eq('auth_user_id', data.user.id)
                 .maybeSingle();
 
-            if (existingProfile) {
-                console.log('Found existing profile by auth_user_id:', existingProfile);
-            } else {
-                // If no profile found by auth_user_id, check user metadata for username
-                const username = data.user.user_metadata?.username;
-                if (username) {
-                    console.log('Checking for profile with username from metadata:', username);
-                    const { data: profileByUsername, error: usernameError } = await supabase
-                        .from('player_profiles')
-                        .select('*')
-                        .eq('username', username)
-                        .maybeSingle();
-
-                    if (profileByUsername) {
-                        console.log('Found existing profile by username, updating auth_user_id:', profileByUsername);
-                        // Update the profile to use the current auth user ID
-                        const { data: updatedProfile, error: updateError } = await supabase
-                            .from('player_profiles')
-                            .update({ auth_user_id: data.user.id })
-                            .eq('id', profileByUsername.id)
-                            .select()
-                            .single();
-
-                        if (updateError) {
-                            console.error('Error updating profile auth_user_id:', updateError);
-                        } else {
-                            console.log('Profile updated successfully:', updatedProfile);
-                        }
-                    } else {
-                        // No existing profile found, create a new one
-                        console.log('No existing profile found, creating new one');
-                        const newProfile = await PlayerService.createProfile(data.user.id, username);
-                        if (newProfile) {
-                            console.log('Created new profile:', newProfile);
-                        }
-                    }
-                } else {
-                    // No username in metadata, create new profile with email prefix
-                    console.log('No username in metadata, creating new profile with email prefix');
-                    const newProfile = await PlayerService.createProfile(data.user.id, email.split('@')[0]);
-                    if (newProfile) {
-                        console.log('Created new profile:', newProfile);
-                    }
+            if (!existingProfile) {
+                // Create new profile with email prefix and display name from metadata
+                console.log('No profile found, creating new profile with email prefix');
+                const displayName = data.user.user_metadata?.display_name || email.split('@')[0];
+                const newProfile = await PlayerService.createProfile(data.user.id, email.split('@')[0], displayName);
+                if (newProfile) {
+                    console.log('Created new profile:', newProfile);
                 }
             }
 
@@ -161,6 +123,48 @@ export class AuthService {
         } catch (error) {
             console.error('Reset password error:', error)
             return { success: false, error }
+        }
+    }
+
+    static async deleteAccount(): Promise<{ success: boolean; error?: string }> {
+        try {
+            console.log('Starting account deletion process');
+            
+            // Get the current session
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                throw new Error('Not authenticated');
+            }
+
+            // Call the server endpoint to delete the account
+            const response = await fetch('/api/delete-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to delete account');
+            }
+
+            // Sign out after successful deletion
+            const { error: signOutError } = await supabase.auth.signOut();
+            if (signOutError) {
+                console.error('Error signing out:', signOutError);
+                throw new Error('Failed to sign out');
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Delete account error:', error);
+            return { 
+                success: false, 
+                error: error instanceof Error ? error.message : 'Failed to delete account' 
+            };
         }
     }
 } 

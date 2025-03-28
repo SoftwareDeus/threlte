@@ -4,7 +4,7 @@
 
     let email = '';
     let password = '';
-    let username = '';
+    let displayName = '';
     let loading = false;
     let error: string | null = null;
 
@@ -12,11 +12,14 @@
         loading = true;
         error = null;
 
-        const success = await authStore.signUp(email, password, username);
-        if (success) {
-            goto('/');
+        const result = await authStore.signUp(email, password, displayName);
+        
+        if (result.success) {
+            // Wait a moment for the auth state to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            goto('/'); // Go to home page after successful signup
         } else {
-            error = $authStore.error;
+            error = result.error || 'Failed to sign up';
         }
 
         loading = false;
@@ -24,65 +27,65 @@
 </script>
 
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md mx-auto">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Sign Up</h2>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create Account</h2>
 
     <form on:submit|preventDefault={handleSubmit} class="space-y-4">
-        <div>
-            <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
-            <input
-                type="text"
-                id="username"
-                bind:value={username}
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-        </div>
-
-        <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-            <input
-                type="email"
-                id="email"
-                bind:value={email}
-                required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-        </div>
-
-        <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
-            <input
-                type="password"
-                id="password"
-                bind:value={password}
-                required
-                minlength="6"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-        </div>
-
-        {#if error}
-            <div class="text-red-600 dark:text-red-400 text-sm">
-                {error}
+        <div class="space-y-6">
+            <div>
+                <label for="email" class="block text-sm font-medium text-white mb-2">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    id="email"
+                    bind:value={email}
+                    class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent"
+                    placeholder="Enter your email"
+                    required
+                />
             </div>
-        {/if}
 
-        <button
-            type="submit"
-            disabled={loading}
-            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            {#if loading}
-                <span class="flex items-center justify-center">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating account...
-                </span>
-            {:else}
-                Sign Up
+            <div>
+                <label for="displayName" class="block text-sm font-medium text-white mb-2">
+                    Display Name
+                </label>
+                <input
+                    type="text"
+                    id="displayName"
+                    bind:value={displayName}
+                    class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent"
+                    placeholder="Choose a display name"
+                    required
+                />
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-white mb-2">
+                    Password
+                </label>
+                <input
+                    type="password"
+                    id="password"
+                    bind:value={password}
+                    class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent"
+                    placeholder="Create a password"
+                    required
+                />
+            </div>
+
+            {#if error}
+                <div class="text-red-500 text-sm">
+                    {error}
+                </div>
             {/if}
-        </button>
+
+            <button
+                type="submit"
+                class="w-full py-2 px-4 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45a049] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
+            >
+                {loading ? 'Creating Account...' : 'Sign Up'}
+            </button>
+        </div>
     </form>
 </div> 

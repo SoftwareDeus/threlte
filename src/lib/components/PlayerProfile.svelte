@@ -4,12 +4,13 @@
     import { authStore } from '../stores/authStore';
     import { supabase } from '../services/supabase';
     import { onMount } from 'svelte';
+    import DeleteAccountForm from './auth/DeleteAccountForm.svelte';
 
-    let username = '';
     let displayName = '';
     let avatarUrl = '';
     let isEditing = false;
     let error: string | null = null;
+    let showDeleteForm = false;
 
     $: profile = $playerStore.profile;
     $: loading = $playerStore.loading;
@@ -27,17 +28,11 @@
     });
 
     async function handleSubmit() {
-        if (!username.trim()) {
-            error = 'Username is required';
-            return;
-        }
-
         try {
             if (profile) {
                 // Update existing profile
                 await playerStore.updateProfile(profile.auth_user_id, {
-                    username,
-                    display_name: displayName || username,
+                    display_name: displayName || profile.username,
                     avatar_url: avatarUrl || undefined
                 });
                 isEditing = false;
@@ -51,7 +46,6 @@
 
     function startEditing() {
         if (profile) {
-            username = profile.username;
             displayName = profile.display_name || profile.username;
             avatarUrl = profile.avatar_url || '';
             isEditing = true;
@@ -92,7 +86,6 @@
             {/if}
             <div>
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">{profile.display_name || profile.username}</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Username: {profile.username}</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Rating: {profile.rating}</p>
             </div>
         </div>
@@ -109,12 +102,27 @@
         </div>
 
         {#if !isEditing}
-            <button
-                on:click={startEditing}
-                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-                Edit Profile
-            </button>
+            <div class="space-y-4">
+                <button
+                    on:click={startEditing}
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Edit Profile
+                </button>
+
+                <button
+                    on:click={() => showDeleteForm = !showDeleteForm}
+                    class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                    {showDeleteForm ? 'Cancel' : 'Delete Account'}
+                </button>
+
+                {#if showDeleteForm}
+                    <div class="mt-4">
+                        <DeleteAccountForm />
+                    </div>
+                {/if}
+            </div>
         {/if}
     {:else}
         <div class="text-center">
@@ -126,23 +134,13 @@
     {#if isEditing && profile}
         <form on:submit|preventDefault={handleSubmit} class="space-y-4">
             <div>
-                <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
-                <input
-                    type="text"
-                    id="username"
-                    bind:value={username}
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    required
-                />
-            </div>
-
-            <div>
-                <label for="displayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name (optional)</label>
+                <label for="displayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name</label>
                 <input
                     type="text"
                     id="displayName"
                     bind:value={displayName}
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    required
                 />
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">This is the name other players will see in the game</p>
             </div>
