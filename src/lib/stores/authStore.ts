@@ -59,9 +59,9 @@ function createAuthStore() {
                     loading: false,
                     error: result.error instanceof Error ? result.error.message : 'An unknown error occurred'
                 }))
-                return false
+                return { success: false }
             }
-            return true
+            return { success: true }
         },
         signOut: async () => {
             update(state => ({ ...state, loading: true, error: null }));

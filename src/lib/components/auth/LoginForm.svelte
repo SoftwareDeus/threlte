@@ -11,12 +11,17 @@
         loading = true;
         error = null;
 
-        // Check if identifier is email or username
-        const isEmail = identifier.includes('@');
-        const success = await authStore.signIn(identifier, password);
+        // Only allow email-based login
+        if (!identifier.includes('@')) {
+            error = 'Please use your email address to log in';
+            loading = false;
+            return;
+        }
+
+        const result = await authStore.signIn(identifier, password);
         
-        if (success) {
-            goto('/profile'); // Redirect to profile page after login
+        if (result.success) {
+            goto('/'); // Go to home page after successful login
         } else {
             error = $authStore.error;
         }

@@ -1,8 +1,12 @@
 <script lang="ts">
     import { playerStore } from '../stores/playerStore';
     import type { PlayerProfile } from '../services/supabase';
+    import { authStore } from '../stores/authStore';
+    import { supabase } from '../services/supabase';
+    import { onMount } from 'svelte';
 
     let username = '';
+    let displayName = '';
     let avatarUrl = '';
     let isEditing = false;
     let error: string | null = null;
@@ -11,30 +15,47 @@
     $: loading = $playerStore.loading;
     $: error = $playerStore.error;
 
+    onMount(async () => {
+        console.log('PlayerProfile component mounted');
+        if (!$authStore.user) {
+            console.error('No user in auth store');
+            error = 'User not authenticated';
+            return;
+        }
+        console.log('User authenticated, loading profile for ID:', $authStore.user.id);
+        await playerStore.loadProfile($authStore.user.id);
+    });
+
     async function handleSubmit() {
         if (!username.trim()) {
             error = 'Username is required';
             return;
         }
 
-        if (profile) {
-            // Update existing profile
-            await playerStore.updateProfile(profile.id, {
-                username,
-                avatar_url: avatarUrl
-            });
-        } else {
-            // Create new profile
-            await playerStore.createProfile(username, avatarUrl);
+        try {
+            if (profile) {
+                // Update existing profile
+                await playerStore.updateProfile(profile.auth_user_id, {
+                    username,
+                    display_name: displayName || username,
+                    avatar_url: avatarUrl || undefined
+                });
+                isEditing = false;
+            } else {
+                error = 'No profile found. Please contact support.';
+            }
+        } catch (e) {
+            error = e instanceof Error ? e.message : 'Failed to update profile';
         }
     }
 
     function startEditing() {
         if (profile) {
             username = profile.username;
+            displayName = profile.display_name || profile.username;
             avatarUrl = profile.avatar_url || '';
+            isEditing = true;
         }
-        isEditing = true;
     }
 
     function cancelEditing() {
@@ -70,7 +91,8 @@
                 </div>
             {/if}
             <div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">{profile.username}</h2>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">{profile.display_name || profile.username}</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Username: {profile.username}</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Rating: {profile.rating}</p>
             </div>
         </div>
@@ -95,10 +117,13 @@
             </button>
         {/if}
     {:else}
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Create Profile</h2>
+        <div class="text-center">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">No Profile Found</h2>
+            <p class="text-gray-600 dark:text-gray-400">Please contact support if you believe this is an error.</p>
+        </div>
     {/if}
 
-    {#if isEditing || !profile}
+    {#if isEditing && profile}
         <form on:submit|preventDefault={handleSubmit} class="space-y-4">
             <div>
                 <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
@@ -109,6 +134,17 @@
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
                 />
+            </div>
+
+            <div>
+                <label for="displayName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name (optional)</label>
+                <input
+                    type="text"
+                    id="displayName"
+                    bind:value={displayName}
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">This is the name other players will see in the game</p>
             </div>
 
             <div>
@@ -126,17 +162,15 @@
                     type="submit"
                     class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                 >
-                    {profile ? 'Save Changes' : 'Create Profile'}
+                    Save Changes
                 </button>
-                {#if profile}
-                    <button
-                        type="button"
-                        on:click={cancelEditing}
-                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                {/if}
+                <button
+                    type="button"
+                    on:click={cancelEditing}
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
             </div>
         </form>
     {/if}

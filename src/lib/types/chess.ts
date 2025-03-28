@@ -60,14 +60,11 @@ export interface ChessPieceData {
 export interface Lobby {
     id: string;
     name: string;
-    host: string;
+    host_id: string;
+    player2_id?: string;
     status: 'waiting' | 'playing';
-    created: Date;
-    slots: {
-        slot1?: { player: string; color?: ColorSelection };
-        slot2?: { player: string; color?: ColorSelection };
-    };
-    timeControl?: {
+    created: string;
+    time_control?: {
         minutes: number;
         increment: number;
     };

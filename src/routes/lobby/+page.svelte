@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
-    import { playerName } from '$lib/stores/playerStore';
+    import { authStore } from '$lib/stores/authStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import type { Lobby } from '$lib/types/chess';
@@ -18,15 +18,15 @@
 
     async function fetchLobbies() {
         try {
-            if (!$playerName) {
-                Sentry.captureMessage('Missing player name', {
+            if (!$authStore.user?.id) {
+                Sentry.captureMessage('User not authenticated', {
                     level: 'error',
                     extra: {
-                        errorMessage: resources.errors.common.nameRequired
+                        errorMessage: resources.errors.common.authRequired
                     }
                 });
-                error = resources.errors.common.nameRequired;
-                setTimeout(() => goto('/'), 2000);
+                error = resources.errors.common.authRequired;
+                setTimeout(() => goto('/auth'), 2000);
                 return;
             }
             lobbies = await getLobbies();
@@ -37,20 +37,20 @@
                 }
             });
             console.error(e);
-            throw new Error(resources.errors.common.fetchFailed);
+            error = resources.errors.common.fetchFailed;
         }
     }
 
     async function createLobbyHandler() {
-        if (!$playerName) {
-            Sentry.captureMessage('Missing player name', {
+        if (!$authStore.user?.id) {
+            Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
@@ -66,7 +66,7 @@
         }
 
         try {
-            const newLobby = await createLobby($playerName, newLobbyName);
+            const newLobby = await createLobby($authStore.user.id, newLobbyName);
             lobbies = [...lobbies, newLobby];
             goto(`/lobby/${newLobby.id}`);
         } catch (e) {
@@ -76,25 +76,25 @@
                 }
             });
             console.error(e);
-            throw new Error(resources.errors.common.createFailed);
+            error = resources.errors.common.createFailed;
         }
     }
 
     async function joinLobbyHandler(id: string) {
-        if (!$playerName) {
-            Sentry.captureMessage('Missing player name', {
+        if (!$authStore.user?.id) {
+            Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
         try {
-            const updatedLobby = await joinLobby(id, $playerName);
+            const updatedLobby = await joinLobby(id, $authStore.user.id);
             lobbies = lobbies.map(l => l.id === id ? updatedLobby : l);
             goto(`/lobby/${id}`);
         } catch (e) {
@@ -104,25 +104,25 @@
                 }
             });
             console.error(e);
-            throw new Error(resources.errors.common.joinFailed);
+            error = resources.errors.common.joinFailed;
         }
     }
 
     async function startGame(id: string) {
-        if (!$playerName) {
-            Sentry.captureMessage('Missing player name', {
+        if (!$authStore.user?.id) {
+            Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
         try {
-            await startLobby(id, $playerName, { minutes: 10, increment: 0 });
+            await startLobby(id, $authStore.user.id, { minutes: 10, increment: 0 });
             lobbyId.set(id);
             goto(`/game/${id}`);
         } catch (e) {
@@ -132,25 +132,25 @@
                 }
             });
             console.error(e);
-            throw new Error(resources.errors.common.startFailed);
+            error = resources.errors.common.startFailed;
         }
     }
 
     async function deleteLobbyHandler() {
-        if (!$playerName || !deleteConfirmId) {
-            Sentry.captureMessage('Missing player name or lobby ID', {
+        if (!$authStore.user?.id || !deleteConfirmId) {
+            Sentry.captureMessage('User not authenticated or missing lobby ID', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
         try {
-            await deleteLobby(deleteConfirmId, $playerName);
+            await deleteLobby(deleteConfirmId, $authStore.user.id);
             deleteConfirmId = null;
             await fetchLobbies();
         } catch (e) {
@@ -160,7 +160,7 @@
                 }
             });
             console.error(e);
-            throw new Error(resources.errors.common.deleteFailed);
+            error = resources.errors.common.deleteFailed;
         }
     }
 
@@ -174,15 +174,15 @@
 
     onMount(async () => {
         try {
-            if (!$playerName) {
-                Sentry.captureMessage('Missing player name', {
+            if (!$authStore.user?.id) {
+                Sentry.captureMessage('User not authenticated', {
                     level: 'error',
                     extra: {
-                        errorMessage: resources.errors.common.nameRequired
+                        errorMessage: resources.errors.common.authRequired
                     }
                 });
-                error = resources.errors.common.nameRequired;
-                setTimeout(() => goto('/'), 2000);
+                error = resources.errors.common.authRequired;
+                setTimeout(() => goto('/auth'), 2000);
                 return;
             }
             await fetchLobbies();

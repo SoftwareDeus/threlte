@@ -2,6 +2,8 @@ import { writable } from 'svelte/store';
 import { ChessColor } from '../types/chess';
 import type { PlayerProfile } from '../services/supabase';
 import { PlayerService } from '../services/playerService';
+import { supabase } from '../services/supabase';
+import { authStore } from '../stores/authStore';
 
 export const playerName = writable<string>('');
 export const playerColor = writable<ChessColor | null>(null);
@@ -26,7 +28,11 @@ function createPlayerStore() {
         createProfile: async (username: string, avatar_url?: string) => {
             update(state => ({ ...state, loading: true, error: null }));
             try {
-                const profile = await PlayerService.createProfile(username, avatar_url);
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) {
+                    throw new Error('User not authenticated');
+                }
+                const profile = await PlayerService.createProfile(user.id, username, avatar_url);
                 if (!profile) throw new Error('Failed to create profile');
                 set({ profile, loading: false, error: null });
             } catch (error: unknown) {
@@ -38,16 +44,52 @@ function createPlayerStore() {
             }
         },
         loadProfile: async (userId: string) => {
+            console.log('Loading profile for user ID:', userId);
             update(state => ({ ...state, loading: true, error: null }));
             try {
-                const profile = await PlayerService.getProfile(userId);
-                if (!profile) throw new Error('Profile not found');
-                set({ profile, loading: false, error: null });
-            } catch (error: unknown) {
+                // First check if the user exists
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) {
+                    console.error('Error getting user:', userError);
+                    set({ 
+                        profile: null, 
+                        loading: false, 
+                        error: 'User not authenticated' 
+                    });
+                    return;
+                }
+
+                console.log('User authenticated, loading profile...');
+                const { data, error } = await supabase
+                    .from('player_profiles')
+                    .select('*')
+                    .eq('auth_user_id', userId)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error('Error loading profile:', error);
+                    set({ 
+                        profile: null, 
+                        loading: false, 
+                        error: 'Failed to load profile' 
+                    });
+                } else if (!data) {
+                    console.log('No profile found for user ID:', userId);
+                    set({ 
+                        profile: null, 
+                        loading: false, 
+                        error: 'No profile found' 
+                    });
+                } else {
+                    console.log('Profile loaded successfully:', data);
+                    set({ profile: data, loading: false, error: null });
+                }
+            } catch (error) {
+                console.error('Error in loadProfile:', error);
                 set({ 
                     profile: null, 
                     loading: false, 
-                    error: error instanceof Error ? error.message : 'An unknown error occurred' 
+                    error: 'Failed to load profile' 
                 });
             }
         },

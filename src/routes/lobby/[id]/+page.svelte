@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
-    import { playerName } from '$lib/stores/playerStore';
+    import { authStore } from '$lib/stores/authStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
@@ -21,14 +21,11 @@
     interface Lobby {
         id: string;
         name: string;
-        host: string;
+        host_id: string;
+        player2_id?: string;
         status: 'waiting' | 'playing';
-        created: Date;
-        slots: {
-            slot1?: { player: string; color?: ColorSelection };
-            slot2?: { player: string; color?: ColorSelection };
-        };
-        timeControl?: {
+        created: string;
+        time_control?: {
             minutes: number;
             increment: number;
         };
@@ -43,15 +40,15 @@
 
     onMount(async () => {
         try {
-            if (!$playerName) {
-                Sentry.captureMessage('Missing player name', {
+            if (!$authStore.user?.id) {
+                Sentry.captureMessage('User not authenticated', {
                     level: 'error',
                     extra: {
-                        errorMessage: resources.errors.common.nameRequired
+                        errorMessage: resources.errors.common.authRequired
                     }
                 });
-                error = resources.errors.common.nameRequired;
-                setTimeout(() => goto('/'), 2000);
+                error = resources.errors.common.authRequired;
+                setTimeout(() => goto('/auth'), 2000);
                 return;
             }
 
@@ -88,19 +85,19 @@
     }
 
     async function updateTimeSettings() {
-        if (!$playerName) {
-            Sentry.captureMessage('Missing player name', {
+        if (!$authStore.user?.id) {
+            Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
-        if (!lobbyId) {
+        if (!$lobbyId) {
             Sentry.captureMessage('Missing lobby ID', {
                 level: 'error',
                 extra: {
@@ -112,8 +109,8 @@
             return;
         }
 
-        if (!lobby) {
-            Sentry.captureMessage('Lobby not found', {
+        if (!isValidTimeControl()) {
+            Sentry.captureMessage('Invalid time control settings', {
                 level: 'error',
                 extra: {
                     errorMessage: resources.errors.common.genericError
@@ -123,16 +120,9 @@
             return;
         }
 
-        const mins = Number(minutes);
-        const inc = Number(increment);
-
-        if (isNaN(mins) || isNaN(inc) || mins < 1 || mins > 60 || inc < 0 || inc > 60) {
-            error = resources.errors.server.validation.invalidTimeControl;
-            return;
-        }
-
         try {
-            lobby = await updateLobbyTimeSettings(lobby.id, $playerName, { minutes: mins, increment: inc });
+            await updateLobbyTimeSettings($lobbyId, $authStore.user.id, { minutes, increment });
+            lobby = await fetchLobby();
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -140,7 +130,7 @@
                 }
             });
             console.error(e);
-            error = e instanceof Error ? e.message : resources.errors.common.updateFailed;
+            error = resources.errors.common.updateFailed;
         }
     }
 
@@ -150,36 +140,30 @@
         updateTimeout = setTimeout(updateTimeSettings, 500);
     }
 
-    async function fetchLobby() {
-        try {
-            const data = await getLobby($page.params.id);
-            lobby = data;
-
-            if (data.status === 'playing') {
-                lobbyId.set(data.id);
-                goto('/game');
-            }
-        } catch (e) {
-            Sentry.captureException(e, {
-                extra: {
-                    errorMessage: resources.errors.common.fetchFailed
-                }
-            });
-            console.error(e);
-            error = resources.errors.common.fetchFailed;
+    async function fetchLobby(): Promise<Lobby> {
+        if (!$lobbyId) {
+            throw new Error('No lobby ID provided');
         }
+
+        const fetchedLobby = await getLobby($lobbyId);
+        if (!fetchedLobby) {
+            throw new Error('Lobby not found');
+        }
+
+        lobby = fetchedLobby;
+        return fetchedLobby;
     }
 
     async function startGame() {
-        if (!$playerName) {
-            Sentry.captureMessage('Missing player name', {
+        if (!$authStore.user?.id) {
+            Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
@@ -207,11 +191,7 @@
         }
 
         try {
-            if (lobby.slots.slot1?.color === ChessColor.Random || lobby.slots.slot2?.color === ChessColor.Random) {
-                await randomizePlayers();
-            }
-
-            await startLobby(lobby.id, $playerName, { minutes, increment });
+            await startLobby(lobby.id, $authStore.user.id, { minutes, increment });
             lobbyId.set(lobby.id);
             goto('/game');
         } catch (e) {
@@ -226,15 +206,15 @@
     }
 
     async function randomizePlayers() {
-        if (!$playerName) {
-            Sentry.captureMessage('Missing player name', {
+        if (!$authStore.user?.id) {
+            Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
-                    errorMessage: resources.errors.common.nameRequired
+                    errorMessage: resources.errors.common.authRequired
                 }
             });
-            error = resources.errors.common.nameRequired;
-            setTimeout(() => goto('/'), 2000);
+            error = resources.errors.common.authRequired;
+            setTimeout(() => goto('/auth'), 2000);
             return;
         }
 
@@ -262,7 +242,7 @@
         }
 
         try {
-            lobby = await randomizeLobby(lobby.id, $playerName);
+            lobby = await randomizeLobby(lobby.id, $authStore.user.id);
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -275,10 +255,11 @@
     }
 
     async function setPlayerColor(targetPlayer: string, color: ChessColor) {
-        if (!$playerName || !lobby) return;
+        if (!$authStore.user?.id || !lobby) return;
 
         try {
-            lobby = await setLobbyPlayerColor(lobby.id, $playerName, targetPlayer, color);
+            await setLobbyPlayerColor(lobby.id, $authStore.user.id, targetPlayer, color);
+            lobby = await fetchLobby();
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -291,10 +272,10 @@
     }
 
     async function deleteLobby() {
-        if (!$playerName || !lobby) return;
+        if (!$authStore.user?.id || !lobby) return;
 
         try {
-            await deleteLobbyService(lobby.id, $playerName);
+            await deleteLobbyService(lobby.id, $authStore.user.id);
             goto('/lobby');
         } catch (e) {
             Sentry.captureException(e, {
@@ -307,15 +288,13 @@
         }
     }
 
-    function isHost(): boolean {
-        return lobby?.host === $playerName;
-    }
+    $: isHost = !!(lobby?.host_id === $authStore.user?.id);
 
     function handleColorChange(slot: 1 | 2, color: ChessColor) {
         if (!lobby) return;
-        const player = slot === 1 ? lobby.slots.slot1?.player : lobby.slots.slot2?.player;
-        if (player) {
-            setPlayerColor(player, color);
+        const targetPlayer = slot === 1 ? lobby.host_id : lobby.player2_id;
+        if (targetPlayer) {
+            setPlayerColor(targetPlayer, color);
         }
     }
 </script>
@@ -324,7 +303,7 @@
     {#if lobby}
         <LobbyDetail
             {lobby}
-            isHost={isHost()}
+            {isHost}
             {minutes}
             {increment}
             onMinutesChange={(value) => minutes = value}
@@ -334,9 +313,12 @@
             onDelete={deleteLobby}
             onRandomize={randomizePlayers}
         />
+    {:else}
+        <div class="flex items-center justify-center h-full">
+            <div class="text-xl">Loading...</div>
+        </div>
     {/if}
 
-    <!-- Error Message -->
     {#if error}
         <div class="fixed bottom-4 right-4 bg-red-500/90 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-4">
             <span>{error}</span>

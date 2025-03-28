@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
-    import { playerName } from '$lib/stores/playerStore';
+    import { authStore } from '$lib/stores/authStore';
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
@@ -19,11 +19,11 @@
     $: console.log('LobbyList received lobbies:', lobbies);
 
     function isHost(lobby: Lobby): boolean {
-        return lobby.host === $playerName;
+        return lobby.host_id === $authStore.user?.id;
     }
 
     function isJoined(lobby: Lobby): boolean {
-        return lobby.slots?.slot1?.player === $playerName || lobby.slots?.slot2?.player === $playerName;
+        return lobby.player2_id === $authStore.user?.id;
     }
 </script>
 

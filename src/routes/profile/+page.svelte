@@ -21,7 +21,7 @@
 
         try {
             if ($playerStore.profile) {
-                await playerStore.updateProfile($playerStore.profile.id, {
+                await playerStore.updateProfile($playerStore.profile.auth_user_id, {
                     username: displayName,
                     avatar_url: avatarUrl
                 });

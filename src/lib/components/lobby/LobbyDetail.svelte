@@ -8,14 +8,11 @@
     interface Lobby {
         id: string;
         name: string;
-        host: string;
+        host_id: string;
+        player2_id?: string;
         status: 'waiting' | 'playing';
-        created: Date;
-        slots: {
-            slot1?: { player: string; color?: ChessColor };
-            slot2?: { player: string; color?: ChessColor };
-        };
-        timeControl?: {
+        created: string;
+        time_control?: {
             minutes: number;
             increment: number;
         };
@@ -33,7 +30,7 @@
     export let onRandomize: () => void;
 
     function isFull(): boolean {
-        return !!lobby.slots.slot1?.player && !!lobby.slots.slot2?.player;
+        return !!lobby.player2_id;
     }
 </script>
 
@@ -48,48 +45,61 @@
         </button>
     </div>
 
-    <div class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="space-y-6">
+            <h2 class="text-2xl font-semibold">{resources.ui.lobby.players.title}</h2>
+            
             <PlayerSlot
                 slotNumber={1}
-                player={lobby.slots.slot1?.player}
-                color={lobby.slots.slot1?.color}
-                isHost={isHost}
+                player={lobby.host_id}
+                color={ChessColor.White}
                 onColorChange={(color) => onColorChange(1, color)}
+                isHost={true}
             />
+
             <PlayerSlot
                 slotNumber={2}
-                player={lobby.slots.slot2?.player}
-                color={lobby.slots.slot2?.color}
-                isHost={isHost}
+                player={lobby.player2_id}
+                color={ChessColor.Black}
                 onColorChange={(color) => onColorChange(2, color)}
+                isHost={false}
             />
         </div>
 
-        <TimeControlSettings
-            isHost={isHost}
-            minutes={minutes}
-            increment={increment}
-            onMinutesChange={onMinutesChange}
-            onIncrementChange={onIncrementChange}
-            currentTimeControl={lobby.timeControl}
-        />
+        <div class="space-y-6">
+            <TimeControlSettings
+                isHost={isHost}
+                {minutes}
+                {increment}
+                onMinutesChange={onMinutesChange}
+                onIncrementChange={onIncrementChange}
+                currentTimeControl={lobby.time_control}
+            />
 
-        <div class="flex justify-end gap-4">
-            <button
-                on:click={onDelete}
-                class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-            >
-                {isHost ? resources.ui.buttons.delete : resources.ui.buttons.leave}
-            </button>
-            {#if isHost && isFull()}
-                <button
-                    on:click={onStart}
-                    class="px-6 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
-                >
-                    {resources.ui.buttons.start}
-                </button>
-            {/if}
+            <div class="flex gap-4">
+                {#if isHost}
+                    <button
+                        on:click={onStart}
+                        class="flex-1 px-6 py-3 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45a049] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!isFull()}
+                    >
+                        Start Game
+                    </button>
+                    <button
+                        on:click={onDelete}
+                        class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                        Delete Lobby
+                    </button>
+                {:else}
+                    <button
+                        on:click={onRandomize}
+                        class="flex-1 px-6 py-3 bg-[#2196F3] text-white rounded-lg hover:bg-[#1976D2] transition-colors"
+                    >
+                        Randomize Colors
+                    </button>
+                {/if}
+            </div>
         </div>
     </div>
 </div> 

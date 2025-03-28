@@ -11,7 +11,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type PlayerProfile = {
     id: string
+    auth_user_id: string
     username: string
+    display_name?: string
     avatar_url?: string
     created_at: string
     last_seen: string

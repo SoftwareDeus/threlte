@@ -9,7 +9,8 @@ export const errors = {
         joinFailed: 'Failed to join',
         startFailed: 'Failed to start game',
         createFailed: 'Failed to create',
-        lobbyNameRequired: 'Please enter a lobby name'
+        lobbyNameRequired: 'Please enter a lobby name',
+        authRequired: 'Please log in to continue'
     },
     server: {
         validation: {
