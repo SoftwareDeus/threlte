@@ -8,6 +8,7 @@
     import * as Sentry from '@sentry/sveltekit';
     import LobbyList from '$lib/components/lobby/LobbyList.svelte';
     import CreateLobbyForm from '$lib/components/lobby/CreateLobbyForm.svelte';
+    import { getLobbies, createLobby, joinLobby, startLobby, deleteLobby } from '$lib/services/lobbyService';
 
     let lobbies: Lobby[] = [];
     let newLobbyName = '';
@@ -28,11 +29,7 @@
                 setTimeout(() => goto('/'), 2000);
                 return;
             }
-            const response = await fetch('/api/lobbies');
-            if (!response.ok) {
-                throw new Error(resources.errors.common.fetchFailed);
-            }
-            lobbies = await response.json();
+            lobbies = await getLobbies();
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -69,20 +66,7 @@
         }
 
         try {
-            const response = await fetch('/api/lobbies', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    host: $playerName,
-                    name: newLobbyName
-                })
-            });
-            if (!response.ok) {
-                throw new Error(resources.errors.common.createFailed);
-            }
-            const newLobby = await response.json();
+            const newLobby = await createLobby($playerName, newLobbyName);
             lobbies = [...lobbies, newLobby];
             goto(`/lobby/${newLobby.id}`);
         } catch (e) {
@@ -110,19 +94,7 @@
         }
 
         try {
-            const response = await fetch(`/api/lobbies/${id}/join`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName
-                })
-            });
-            if (!response.ok) {
-                throw new Error(resources.errors.common.joinFailed);
-            }
-            const updatedLobby = await response.json();
+            const updatedLobby = await joinLobby(id, $playerName);
             lobbies = lobbies.map(l => l.id === id ? updatedLobby : l);
             goto(`/lobby/${id}`);
         } catch (e) {
@@ -150,19 +122,7 @@
         }
 
         try {
-            const response = await fetch(`/api/lobbies/${id}/start`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName,
-                    timeControl: { minutes: 10, increment: 0 }
-                })
-            });
-            if (!response.ok) {
-                throw new Error(resources.errors.common.startFailed);
-            }
+            await startLobby(id, $playerName, { minutes: 10, increment: 0 });
             lobbyId.set(id);
             goto(`/game/${id}`);
         } catch (e) {
@@ -176,7 +136,7 @@
         }
     }
 
-    async function deleteLobby() {
+    async function deleteLobbyHandler() {
         if (!$playerName || !deleteConfirmId) {
             Sentry.captureMessage('Missing player name or lobby ID', {
                 level: 'error',
@@ -190,18 +150,7 @@
         }
 
         try {
-            const response = await fetch(`/api/lobbies/${deleteConfirmId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName
-                })
-            });
-            if (!response.ok) {
-                throw new Error(resources.errors.common.deleteFailed);
-            }
+            await deleteLobby(deleteConfirmId, $playerName);
             deleteConfirmId = null;
             await fetchLobbies();
         } catch (e) {
@@ -271,7 +220,7 @@
             {deleteConfirmId}
             onDeleteConfirm={confirmDelete}
             onDeleteCancel={cancelDelete}
-            onDelete={deleteLobby}
+            onDelete={deleteLobbyHandler}
             onJoin={joinLobbyHandler}
             onStart={startGame}
         />
