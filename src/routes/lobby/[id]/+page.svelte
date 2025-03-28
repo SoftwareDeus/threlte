@@ -9,6 +9,14 @@
     import type { ColorSelection } from '$lib/types/chess';
     import * as Sentry from '@sentry/sveltekit';
     import LobbyDetail from '$lib/components/lobby/LobbyDetail.svelte';
+    import { 
+        getLobby, 
+        updateTimeSettings as updateLobbyTimeSettings, 
+        startLobby, 
+        randomizeLobby, 
+        setPlayerColor as setLobbyPlayerColor, 
+        deleteLobby as deleteLobbyService 
+    } from '$lib/services/lobbyService';
 
     interface Lobby {
         id: string;
@@ -124,24 +132,7 @@
         }
 
         try {
-            const response = await fetch(`/api/lobbies/${lobby.id}/time-settings`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName,
-                    timeControl: { minutes: mins, increment: inc }
-                })
-            });
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || resources.errors.common.updateFailed);
-            }
-
-            const updatedLobby = await response.json();
-            lobby = updatedLobby;
+            lobby = await updateLobbyTimeSettings(lobby.id, $playerName, { minutes: mins, increment: inc });
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -161,11 +152,7 @@
 
     async function fetchLobby() {
         try {
-            const response = await fetch(`/api/lobbies/${$page.params.id}`);
-            if (!response.ok) {
-                throw new Error(resources.errors.common.fetchFailed);
-            }
-            const data = await response.json();
+            const data = await getLobby($page.params.id);
             lobby = data;
 
             if (data.status === 'playing') {
@@ -224,21 +211,7 @@
                 await randomizePlayers();
             }
 
-            const response = await fetch(`/api/lobbies/${lobby.id}/start`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName,
-                    timeControl: { minutes, increment }
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(resources.errors.common.startFailed);
-            }
-
+            await startLobby(lobby.id, $playerName, { minutes, increment });
             lobbyId.set(lobby.id);
             goto('/game');
         } catch (e) {
@@ -289,22 +262,7 @@
         }
 
         try {
-            const response = await fetch(`/api/lobbies/${lobby.id}/randomize`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(resources.errors.common.updateFailed);
-            }
-
-            const updatedLobby = await response.json();
-            lobby = updatedLobby;
+            lobby = await randomizeLobby(lobby.id, $playerName);
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -320,24 +278,7 @@
         if (!$playerName || !lobby) return;
 
         try {
-            const response = await fetch(`/api/lobbies/${lobby.id}/set-color`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName,
-                    targetPlayer,
-                    color
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(resources.errors.common.updateFailed);
-            }
-
-            const updatedLobby = await response.json();
-            lobby = updatedLobby;
+            lobby = await setLobbyPlayerColor(lobby.id, $playerName, targetPlayer, color);
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -353,20 +294,7 @@
         if (!$playerName || !lobby) return;
 
         try {
-            const response = await fetch(`/api/lobbies/${lobby.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    playerName: $playerName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(resources.errors.common.deleteFailed);
-            }
-
+            await deleteLobbyService(lobby.id, $playerName);
             goto('/lobby');
         } catch (e) {
             Sentry.captureException(e, {

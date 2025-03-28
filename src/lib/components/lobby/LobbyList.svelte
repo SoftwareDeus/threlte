@@ -5,29 +5,8 @@
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
+    import type { Lobby } from '$lib/types/chess';
     import * as Sentry from '@sentry/sveltekit';
-
-    interface Lobby {
-        id: string;
-        name: string;
-        host: string;
-        status: 'waiting' | 'playing';
-        created: Date;
-        slots: {
-            slot1?: {
-                player?: string;
-                color: ChessColor;
-            };
-            slot2?: {
-                player?: string;
-                color: ChessColor;
-            };
-        };
-        timeControl?: {
-            minutes: number;
-            increment: number;
-        };
-    }
 
     export let lobbies: Lobby[] = [];
     export let onDeleteConfirm: (id: string) => void;
@@ -36,6 +15,8 @@
     export let onJoin: (id: string) => void;
     export let onStart: (id: string) => void;
     export let deleteConfirmId: string | null = null;
+
+    $: console.log('LobbyList received lobbies:', lobbies);
 
     function isHost(lobby: Lobby): boolean {
         return lobby.host === $playerName;

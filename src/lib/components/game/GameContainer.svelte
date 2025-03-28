@@ -10,6 +10,7 @@
     import { resources } from '$lib/resources';
     import * as Sentry from '@sentry/sveltekit';
     import { ChessColor } from '$lib/types/chess';
+    import { getGameState, endGame } from '$lib/services/gameService';
 
     let error: string | null = null;
     let redirectTimeout: ReturnType<typeof setTimeout>;
@@ -23,23 +24,25 @@
     });
 
     async function fetchGameState() {
-        if (!$lobbyId) return;
-
         try {
-            const response = await fetch(`/api/game/${$lobbyId}`);
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || resources.errors.common.fetchFailed);
+            const currentLobbyId = $lobbyId;
+            if (!currentLobbyId) {
+                throw new Error(resources.errors.common.genericError);
             }
-            const data = await response.json();
-            gameState.set(data);
+
+            const state = await getGameState(currentLobbyId);
+            gameState.set(state);
+
+            if (state.gameOver) {
+                await handleGameOver();
+            }
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
                     errorMessage: resources.errors.common.fetchFailed
                 }
             });
-            console.error(resources.errors.common.fetchFailed, e);
+            console.error('Error fetching game state:', e);
             error = resources.errors.common.fetchFailed;
         }
     }
@@ -49,20 +52,7 @@
         if (!currentLobbyId) return;
 
         try {
-            const response = await fetch(`/api/lobbies/${currentLobbyId}/end`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    winner: winner,
-                    playerName: $playerName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(resources.errors.common.updateFailed);
-            }
+            await endGame(currentLobbyId, $playerName, winner || '');
         } catch (error) {
             Sentry.captureException(error, {
                 extra: {
@@ -91,40 +81,30 @@
                 Sentry.captureMessage('Missing lobby ID', {
                     level: 'error',
                     extra: {
-                        errorMessage: resources.errors.common.fetchFailed
+                        errorMessage: resources.errors.common.genericError
                     }
                 });
-                error = resources.errors.common.fetchFailed;
+                error = resources.errors.common.genericError;
                 redirectTimeout = setTimeout(() => goto('/lobby'), 2000);
                 return;
             }
 
-            // Initial fetch
             await fetchGameState();
-
-            // Set up polling every second
             pollInterval = setInterval(fetchGameState, 1000);
-
-            if (isGameOver) {
-                await handleGameOver();
-            }
         } catch (error) {
             Sentry.captureException(error, {
                 extra: {
                     errorMessage: resources.errors.common.fetchFailed
                 }
             });
+            console.error('Error in onMount:', error);
             error = resources.errors.common.fetchFailed;
         }
     });
 
     onDestroy(() => {
-        if (pollInterval) {
-            clearInterval(pollInterval);
-        }
-        if (redirectTimeout) {
-            clearTimeout(redirectTimeout);
-        }
+        if (redirectTimeout) clearTimeout(redirectTimeout);
+        if (pollInterval) clearInterval(pollInterval);
     });
 </script>
 
@@ -139,7 +119,7 @@
         <div class="fixed bottom-4 right-4 bg-red-500/90 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-4">
             <span>{error}</span>
             <button
-                on:click={() => error = null}
+                on:click={() => error = ''}
                 class="text-white hover:text-white/80"
             >
                 {resources.errors.common.closeButton}

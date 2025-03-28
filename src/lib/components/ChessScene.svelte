@@ -5,12 +5,13 @@
 	import SceneCamera from './SceneCamera.svelte'
 	import ChessBoard from '$lib/components/ChessBoard.svelte';
 	import CapturePlatform from './CapturePlatform.svelte';
-	import { gameState } from '$lib/stores/gameStore';	
+	import { gameState } from '$lib/stores/gameStore';
 	import { playerName } from '$lib/stores/playerStore';
 	import type { GameState } from '$lib/types/chess';
 	import { ChessColor } from '$lib/types/chess';
 	import { resources } from '$lib/resources';
 	import * as Sentry from '@sentry/sveltekit';
+	import { makeMove } from '$lib/services/gameService';
 
 	export let lobbyId: string | null = null;
 
@@ -20,23 +21,7 @@
 		if (!lobbyId) return;
 
 		try {
-			const response = await fetch(`/api/game/${lobbyId}`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					playerName: $playerName,
-					move
-				})
-			});
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || resources.errors.common.updateFailed);
-			}
-
-			const updatedState = await response.json();
+			const updatedState = await makeMove(lobbyId, $playerName, move);
 			
 			if (updatedState.lastMove?.pieceId === move.pieceId) {
 				gameState.set(updatedState);

@@ -11,6 +11,7 @@
 	import { playerName } from "$lib/stores/playerStore";
 	import { resources } from "$lib/resources";
 	import * as Sentry from '@sentry/sveltekit';
+	import { getLobby } from '$lib/services/lobbyService';
 
 	let selectedPiece: ChessPiece | null = null;
 	let validMoves: [number, number][] = [];
@@ -82,17 +83,13 @@
 		if (!currentLobbyId) return;
 
 		try {
-			const response = await fetch(`/api/lobbies/${currentLobbyId}`);
-			if (!response.ok) return;
-
-			const lobby = await response.json();
+			const lobby = await getLobby(currentLobbyId);
 			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
 						 (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color ?
 						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 null;
 			
-			// Update pieces with moves when we get the player's color
 			updatePiecesWithMoves();
 		} catch (error) {
 			Sentry.captureException(error, {

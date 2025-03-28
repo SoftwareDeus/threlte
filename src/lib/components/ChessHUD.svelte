@@ -8,6 +8,8 @@
 	import { goto } from "$app/navigation";
 	import { resources } from '$lib/resources';
 	import * as Sentry from '@sentry/sveltekit';
+	import { getLobby, deleteLobby } from '$lib/services/lobbyService';
+	import { updateTime as updateGameTime } from '$lib/services/gameService';
 
 	let whiteTime = resources.config.time.defaultMinutes * 60;
 	let blackTime = resources.config.time.defaultMinutes * 60;
@@ -43,16 +45,12 @@
 		if (!currentLobbyId) return;
 
 		try {
-			const response = await fetch(`/api/lobbies/${currentLobbyId}`);
-			if (!response.ok) return;
-
-			const lobby = await response.json();
+			const lobby = await getLobby(currentLobbyId);
 			whitePlayer = lobby.slots.slot1?.color === 'white' ? lobby.slots.slot1.player :
 						 lobby.slots.slot2?.color === 'white' ? lobby.slots.slot2.player : resources.ui.chess.pieces.white.king;
 			blackPlayer = lobby.slots.slot1?.color === 'black' ? lobby.slots.slot1.player :
 						 lobby.slots.slot2?.color === 'black' ? lobby.slots.slot2.player : resources.ui.chess.pieces.black.king;
 			
-			// Set the player's color based on their slot
 			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
 						 (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
 						 lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color ?
@@ -64,7 +62,7 @@
 					errorMessage: resources.errors.common.fetchFailed
 				}
 			});
-			console.error(resources.errors.common.fetchFailed, error);
+			console.error('Error fetching player info:', error);
 		}
 	}
 
@@ -75,35 +73,15 @@
 	});
 
 	onDestroy(() => {
-		if (lobbyInterval) {
-			clearInterval(lobbyInterval);
-		}
-		if (timeInterval) {
-			clearInterval(timeInterval);
-		}
+		if (lobbyInterval) clearInterval(lobbyInterval);
+		if (timeInterval) clearInterval(timeInterval);
 	});
 
 	async function updateTime() {
 		if (!$lobbyId || !playerColor) return;
 
 		try {
-			const response = await fetch(`/api/game/${$lobbyId}/time`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					playerName: $playerName,
-					color: playerColor
-				})
-			});
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || resources.errors.common.updateFailed);
-			}
-
-			const state = await response.json();
+			const state = await updateGameTime($lobbyId, $playerName, playerColor);
 			if (state.timeRemaining) {
 				whiteTime = state.timeRemaining.white;
 				blackTime = state.timeRemaining.black;
@@ -114,7 +92,7 @@
 					errorMessage: resources.errors.common.updateFailed
 				}
 			});
-			console.error(resources.errors.common.updateFailed, error);
+			console.error('Error updating time:', error);
 		}
 	}
 
@@ -135,20 +113,7 @@
 		if (!$lobbyId) return;
 		
 		try {
-			const response = await fetch(`/api/lobbies/${$lobbyId}`, {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					playerName: $playerName
-				})
-			});
-
-			if (!response.ok) {
-				throw new Error(resources.errors.common.deleteFailed);
-			}
-
+			await deleteLobby($lobbyId, $playerName);
 			goto('/lobby');
 		} catch (error) {
 			Sentry.captureException(error, {
@@ -156,7 +121,7 @@
 					errorMessage: resources.errors.common.deleteFailed
 				}
 			});
-			console.error(resources.errors.common.deleteFailed, error);
+			console.error('Error deleting lobby:', error);
 		}
 	}
 </script>
