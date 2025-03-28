@@ -2,21 +2,9 @@
     import { goto } from '$app/navigation';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
+    import type { Lobby } from '$lib/types/chess';
     import PlayerSlot from './PlayerSlot.svelte';
     import TimeControlSettings from './TimeControlSettings.svelte';
-
-    interface Lobby {
-        id: string;
-        name: string;
-        host_id: string;
-        player2_id?: string;
-        status: 'waiting' | 'playing';
-        created: string;
-        time_control?: {
-            minutes: number;
-            increment: number;
-        };
-    }
 
     export let lobby: Lobby;
     export let isHost: boolean;
@@ -45,7 +33,7 @@
         </button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="space-y-8">
         <div class="space-y-6">
             <h2 class="text-2xl font-semibold">{resources.ui.lobby.players.title}</h2>
             
@@ -59,7 +47,7 @@
 
             <PlayerSlot
                 slotNumber={2}
-                player={lobby.player2_id}
+                player={lobby.player2_id || undefined}
                 color={ChessColor.Black}
                 onColorChange={(color) => onColorChange(2, color)}
                 isHost={false}
@@ -73,7 +61,7 @@
                 {increment}
                 onMinutesChange={onMinutesChange}
                 onIncrementChange={onIncrementChange}
-                currentTimeControl={lobby.time_control}
+                currentTimeControl={lobby.time_control || undefined}
             />
 
             <div class="flex gap-4">

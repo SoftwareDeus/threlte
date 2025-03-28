@@ -6,7 +6,7 @@
     import { lobbyId } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
-    import type { ColorSelection } from '$lib/types/chess';
+    import type { ColorSelection, Lobby } from '$lib/types/chess';
     import * as Sentry from '@sentry/sveltekit';
     import LobbyDetail from '$lib/components/lobby/LobbyDetail.svelte';
     import { 
@@ -18,25 +18,31 @@
         deleteLobby as deleteLobbyService 
     } from '$lib/services/lobbyService';
 
-    interface Lobby {
-        id: string;
-        name: string;
-        host_id: string;
-        player2_id?: string;
-        status: 'waiting' | 'playing';
-        created: string;
-        time_control?: {
-            minutes: number;
-            increment: number;
-        };
-    }
-
     let lobby: Lobby | null = null;
     let error = '';
     let interval: ReturnType<typeof setInterval>;
     let minutes = 10;
     let increment = 0;
     let updateTimeout: ReturnType<typeof setTimeout>;
+    let isHostValue = false;
+
+    $: isHostValue = lobby?.host_id === $authStore.user?.id;
+
+    function isHost(): boolean {
+        return isHostValue;
+    }
+
+    function handleTimeControlUpdate() {
+        if (isHost() && lobby && isValidTimeControl() && lobby.status === 'waiting') {
+            if (updateTimeout) clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(updateTimeSettings, 500);
+        }
+    }
+
+    // Watch for changes in timeControl and update the lobby with debounce
+    $: {
+        handleTimeControlUpdate();
+    }
 
     onMount(async () => {
         try {
@@ -52,7 +58,7 @@
                 return;
             }
 
-            if (!lobbyId) {
+            if (!$lobbyId) {
                 Sentry.captureMessage('Missing lobby ID', {
                     level: 'error',
                     extra: {
@@ -134,24 +140,24 @@
         }
     }
 
-    // Watch for changes in timeControl and update the lobby with debounce
-    $: if (isHost() && lobby && isValidTimeControl() && lobby.status === 'waiting') {
-        if (updateTimeout) clearTimeout(updateTimeout);
-        updateTimeout = setTimeout(updateTimeSettings, 500);
-    }
-
     async function fetchLobby(): Promise<Lobby> {
         if (!$lobbyId) {
             throw new Error('No lobby ID provided');
         }
 
-        const fetchedLobby = await getLobby($lobbyId);
-        if (!fetchedLobby) {
-            throw new Error('Lobby not found');
+        try {
+            const fetchedLobby = await getLobby($lobbyId);
+            lobby = fetchedLobby;
+            return fetchedLobby;
+        } catch (e) {
+            if (e instanceof Error && e.message === resources.errors.server.validation.lobbyNotFound) {
+                error = resources.errors.server.validation.lobbyNotFound;
+                setTimeout(() => goto('/lobby'), 2000);
+            } else {
+                throw e;
+            }
+            throw e;
         }
-
-        lobby = fetchedLobby;
-        return fetchedLobby;
     }
 
     async function startGame() {
@@ -288,8 +294,6 @@
         }
     }
 
-    $: isHost = !!(lobby?.host_id === $authStore.user?.id);
-
     function handleColorChange(slot: 1 | 2, color: ChessColor) {
         if (!lobby) return;
         const targetPlayer = slot === 1 ? lobby.host_id : lobby.player2_id;
@@ -303,7 +307,7 @@
     {#if lobby}
         <LobbyDetail
             {lobby}
-            {isHost}
+            isHost={isHostValue}
             {minutes}
             {increment}
             onMinutesChange={(value) => minutes = value}

@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { goto } from '$app/navigation';
     import { authStore } from '$lib/stores/authStore';
-    import { lobbyId } from '$lib/stores/lobbyStore';
+    import { lobbyId, lobbies } from '$lib/stores/lobbyStore';
     import { resources } from '$lib/resources';
     import type { Lobby } from '$lib/types/chess';
     import * as Sentry from '@sentry/sveltekit';
@@ -10,7 +10,6 @@
     import CreateLobbyForm from '$lib/components/lobby/CreateLobbyForm.svelte';
     import { getLobbies, createLobby, joinLobby, startLobby, deleteLobby } from '$lib/services/lobbyService';
 
-    let lobbies: Lobby[] = [];
     let newLobbyName = '';
     let error: string | null = null;
     let deleteConfirmId: string | null = null;
@@ -18,6 +17,10 @@
 
     async function fetchLobbies() {
         try {
+            if ($authStore.loading) {
+                return; // Wait for auth to initialize
+            }
+
             if (!$authStore.user?.id) {
                 Sentry.captureMessage('User not authenticated', {
                     level: 'error',
@@ -29,7 +32,8 @@
                 setTimeout(() => goto('/auth'), 2000);
                 return;
             }
-            lobbies = await getLobbies();
+            const fetchedLobbies = await getLobbies();
+            lobbies.set(fetchedLobbies);
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -43,6 +47,7 @@
 
     async function createLobbyHandler() {
         if (!$authStore.user?.id) {
+            console.error('User not authenticated');
             Sentry.captureMessage('User not authenticated', {
                 level: 'error',
                 extra: {
@@ -55,6 +60,7 @@
         }
 
         if (!newLobbyName.trim()) {
+            console.error('Missing lobby name');
             Sentry.captureMessage('Missing lobby name', {
                 level: 'error',
                 extra: {
@@ -66,16 +72,21 @@
         }
 
         try {
+            console.log('Creating lobby with user:', $authStore.user.id);
             const newLobby = await createLobby($authStore.user.id, newLobbyName);
-            lobbies = [...lobbies, newLobby];
-            goto(`/lobby/${newLobby.id}`);
+            console.log('Created lobby:', newLobby);
+            lobbies.update(currentLobbies => [...currentLobbies, newLobby]);
+            lobbyId.set(newLobby.id);
+            await goto(`/lobby/${newLobby.id}`);
         } catch (e) {
+            console.error('Error creating lobby:', e);
             Sentry.captureException(e, {
                 extra: {
-                    errorMessage: resources.errors.common.createFailed
+                    errorMessage: resources.errors.common.createFailed,
+                    userId: $authStore.user.id,
+                    lobbyName: newLobbyName
                 }
             });
-            console.error(e);
             error = resources.errors.common.createFailed;
         }
     }
@@ -95,8 +106,11 @@
 
         try {
             const updatedLobby = await joinLobby(id, $authStore.user.id);
-            lobbies = lobbies.map(l => l.id === id ? updatedLobby : l);
-            goto(`/lobby/${id}`);
+            lobbies.update(currentLobbies => 
+                currentLobbies.map(l => l.id === id ? updatedLobby : l)
+            );
+            lobbyId.set(id);
+            await goto(`/lobby/${id}`);
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -124,7 +138,7 @@
         try {
             await startLobby(id, $authStore.user.id, { minutes: 10, increment: 0 });
             lobbyId.set(id);
-            goto(`/game/${id}`);
+            await goto(`/game/${id}`);
         } catch (e) {
             Sentry.captureException(e, {
                 extra: {
@@ -172,38 +186,22 @@
         deleteConfirmId = null;
     }
 
-    onMount(async () => {
-        try {
-            if (!$authStore.user?.id) {
-                Sentry.captureMessage('User not authenticated', {
-                    level: 'error',
-                    extra: {
-                        errorMessage: resources.errors.common.authRequired
-                    }
-                });
-                error = resources.errors.common.authRequired;
-                setTimeout(() => goto('/auth'), 2000);
-                return;
-            }
-            await fetchLobbies();
-            // Start polling for lobby updates every 2 seconds
-            pollInterval = setInterval(fetchLobbies, 2000);
-        } catch (error) {
-            Sentry.captureException(error, {
-                extra: {
-                    errorMessage: resources.errors.common.fetchFailed
-                }
-            });
-            error = resources.errors.common.fetchFailed;
-        }
+    onMount(() => {
+        fetchLobbies();
+        // Set up polling for lobby updates
+        pollInterval = setInterval(fetchLobbies, 5000);
     });
 
-    // Clean up the interval when the component is destroyed
     onDestroy(() => {
         if (pollInterval) {
             clearInterval(pollInterval);
         }
     });
+
+    // Watch for auth state changes
+    $: if (!$authStore.loading) {
+        fetchLobbies();
+    }
 </script>
 
 <div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/10 [&::-webkit-scrollbar-track]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb:hover]:bg-white/30">
@@ -216,7 +214,7 @@
         />
 
         <LobbyList 
-            {lobbies}
+            lobbies={$lobbies}
             {deleteConfirmId}
             onDeleteConfirm={confirmDelete}
             onDeleteCancel={cancelDelete}

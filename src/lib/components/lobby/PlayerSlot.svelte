@@ -1,13 +1,37 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { resources } from '$lib/resources';
     import { ChessColor } from '$lib/types/chess';
     import { playerName } from '$lib/stores/playerStore';
+    import { supabase } from '$lib/services/supabase';
 
     export let slotNumber: 1 | 2;
     export let player: string | undefined;
     export let color: ChessColor | undefined;
     export let isHost: boolean;
     export let onColorChange: (color: ChessColor) => void;
+
+    let displayName: string | undefined;
+
+    async function fetchDisplayName(userId: string) {
+        const { data, error } = await supabase
+            .from('player_profiles')
+            .select('display_name')
+            .eq('auth_user_id', userId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching display name:', error);
+            displayName = userId;
+            return;
+        }
+
+        displayName = data?.display_name || userId;
+    }
+
+    $: if (player) {
+        fetchDisplayName(player);
+    }
 </script>
 
 <div class="p-4 rounded-lg bg-black/20 {color === ChessColor.White ? 'bg-white/10' : color === ChessColor.Black ? 'bg-black/20' : ''}">
@@ -15,7 +39,7 @@
         <div class="flex items-center gap-4">
             <span class="text-lg">{resources.ui.lobby.players[`slot${slotNumber}`]}:</span>
             <span class="text-{resources.config.colors.ui.text.secondary}">
-                {player || resources.ui.lobby.players.waitingForPlayer}
+                {displayName || resources.ui.lobby.players.waitingForPlayer}
             </span>
             {#if player === $playerName}
                 <span class="text-{resources.config.colors.ui.success}">({resources.ui.labels.you})</span>

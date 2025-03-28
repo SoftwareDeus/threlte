@@ -16,32 +16,46 @@ export async function getLobbies(): Promise<Lobby[]> {
 }
 
 export async function createLobby(userId: string, name: string): Promise<Lobby> {
+    console.log('Creating lobby with:', { userId, name });
+    
     const { data, error } = await supabase
         .from('lobbies')
         .insert([
             {
                 name,
                 host_id: userId,
-                status: 'waiting',
-                created: new Date().toISOString()
+                status: 'waiting'
             }
         ])
         .select()
         .single();
 
     if (error) {
+        console.error('Supabase error:', error);
         throw new Error(resources.errors.common.createFailed);
     }
 
+    console.log('Created lobby:', data);
     return data;
 }
 
 export async function getLobby(id: string): Promise<Lobby> {
-    const response = await fetch(`/api/lobbies/${id}`);
-    if (!response.ok) {
+    const { data, error } = await supabase
+        .from('lobbies')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Supabase error:', error);
         throw new Error(resources.errors.common.fetchFailed);
     }
-    return response.json();
+
+    if (!data) {
+        throw new Error(resources.errors.server.validation.lobbyNotFound);
+    }
+
+    return data;
 }
 
 export async function deleteLobby(id: string, userId: string): Promise<void> {

@@ -25,6 +25,21 @@
     function isJoined(lobby: Lobby): boolean {
         return lobby.player2_id === $authStore.user?.id;
     }
+
+    function getSlot1(lobby: Lobby) {
+        return {
+            player: lobby.host_id,
+            color: ChessColor.White
+        };
+    }
+
+    function getSlot2(lobby: Lobby) {
+        if (!lobby.player2_id) return undefined;
+        return {
+            player: lobby.player2_id,
+            color: ChessColor.Black
+        };
+    }
 </script>
 
 <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/10 [&::-webkit-scrollbar-track]:rounded [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb:hover]:bg-white/30">
@@ -64,23 +79,25 @@
                     <div class="flex-1">
                         <h3 class="text-xl font-bold">{lobby.name}</h3>
                         <p class="text-white/70">
-                            {resources.ui.labels.host}: {lobby.host}
+                            {resources.ui.labels.host}: {lobby.host_id}
                             {#if isHost(lobby)}
                                 <span class="text-[#4CAF50] ml-2">({resources.ui.labels.you})</span>
                             {/if}
                         </p>
                         <div class="text-sm text-white/50 mt-1">
-                            {#if lobby.slots.slot1?.player}
-                                <span class="mr-2">Slot 1: {lobby.slots.slot1.player} ({lobby.slots.slot1.color})</span>
+                            {#if getSlot1(lobby)}
+                                {@const slot1 = getSlot1(lobby) as { player: string; color: ChessColor }}
+                                <span class="mr-2">Slot 1: {slot1.player} ({slot1.color})</span>
                             {/if}
-                            {#if lobby.slots.slot2?.player}
-                                <span>Slot 2: {lobby.slots.slot2.player} ({lobby.slots.slot2.color})</span>
+                            {#if getSlot2(lobby)}
+                                {@const slot2 = getSlot2(lobby) as { player: string; color: ChessColor }}
+                                <span>Slot 2: {slot2.player} ({slot2.color})</span>
                             {/if}
                         </div>
                     </div>
                     <div class="w-48 flex justify-end gap-2">
                         {#if isHost(lobby)}
-                            {#if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
+                            {#if getSlot1(lobby) && getSlot2(lobby)}
                                 <button
                                     on:click={() => onStart(lobby.id)}
                                     class="px-4 py-2 bg-[#4CAF50] text-white rounded hover:bg-[#45a049] transition-colors"
@@ -101,7 +118,7 @@
                             >
                                 {resources.ui.buttons.leave}
                             </button>
-                        {:else if lobby.slots?.slot1?.player && lobby.slots?.slot2?.player}
+                        {:else if getSlot1(lobby) && getSlot2(lobby)}
                             <span class="px-4 py-2 bg-gray-500 text-white rounded">
                                 {resources.ui.labels.full}
                             </span>

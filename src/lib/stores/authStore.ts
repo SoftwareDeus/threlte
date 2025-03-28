@@ -10,6 +10,11 @@ interface AuthState {
     error: string | null
 }
 
+interface AuthResult {
+    success: boolean
+    error?: string
+}
+
 function createAuthStore() {
     const { subscribe, set, update } = writable<AuthState>({
         user: null,
@@ -76,47 +81,60 @@ function createAuthStore() {
 
     return {
         subscribe,
-        signUp: async (email: string, password: string, displayName: string) => {
+        signUp: async (email: string, password: string, displayName: string): Promise<AuthResult> => {
             update(state => ({ ...state, loading: true, error: null }))
             const result = await AuthService.signUp(email, password, displayName)
             if (!result.success) {
                 update(state => ({
                     ...state,
                     loading: false,
-                    error: result.error instanceof Error ? result.error.message : 'An unknown error occurred'
+                    error: result.error || 'Failed to sign up'
                 }))
                 return { success: false, error: result.error }
             }
             return { success: true }
         },
-        signIn: async (email: string, password: string) => {
+        signIn: async (email: string, password: string): Promise<AuthResult> => {
             update(state => ({ ...state, loading: true, error: null }))
             const result = await AuthService.signIn(email, password)
             if (!result.success) {
                 update(state => ({
                     ...state,
                     loading: false,
-                    error: result.error instanceof Error ? result.error.message : 'An unknown error occurred'
+                    error: result.error || 'Failed to sign in'
                 }))
-                return { success: false }
+                return { success: false, error: result.error }
             }
             return { success: true }
         },
-        signOut: async () => {
+        signOut: async (): Promise<AuthResult> => {
             update(state => ({ ...state, loading: true, error: null }))
-            try {
-                const result = await supabase.auth.signOut()
-                if (result.error) throw result.error
-                playerStore.clearProfile()
-                set({ user: null, loading: false, error: null })
-                return { error: null }
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Failed to sign out'
-                set({ user: null, loading: false, error: errorMessage })
-                return { error: errorMessage }
+            const result = await AuthService.signOut()
+            if (!result.success) {
+                update(state => ({
+                    ...state,
+                    loading: false,
+                    error: result.error || 'Failed to sign out'
+                }))
+                return { success: false, error: result.error }
             }
+            return { success: true }
         },
-        deleteAccount: async () => {
+        isAuthenticated: () => {
+            let user: User | null = null;
+            subscribe(state => {
+                user = state.user;
+            })();
+            return !!user;
+        },
+        isLoading: () => {
+            let loading = true;
+            subscribe(state => {
+                loading = state.loading;
+            })();
+            return loading;
+        },
+        deleteAccount: async (): Promise<AuthResult> => {
             update(state => ({ ...state, loading: true, error: null }))
             const result = await AuthService.deleteAccount()
             if (!result.success) {
@@ -130,14 +148,14 @@ function createAuthStore() {
             set({ user: null, loading: false, error: null })
             return { success: true }
         },
-        resetPassword: async (email: string) => {
+        resetPassword: async (email: string): Promise<boolean> => {
             update(state => ({ ...state, loading: true, error: null }))
             const result = await AuthService.resetPassword(email)
             if (!result.success) {
                 update(state => ({
                     ...state,
                     loading: false,
-                    error: result.error instanceof Error ? result.error.message : 'An unknown error occurred'
+                    error: result.error instanceof Error ? result.error.message : 'Failed to reset password'
                 }))
                 return false
             }

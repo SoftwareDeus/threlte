@@ -61,11 +61,21 @@ export interface Lobby {
     id: string;
     name: string;
     host_id: string;
-    player2_id?: string;
+    player2_id?: string | null;
     status: 'waiting' | 'playing';
     created: string;
     time_control?: {
         minutes: number;
         increment: number;
+    } | null;
+    slots: {
+        slot1?: {
+            player: string;
+            color: ChessColor;
+        };
+        slot2?: {
+            player: string;
+            color: ChessColor;
+        };
     };
 } 
