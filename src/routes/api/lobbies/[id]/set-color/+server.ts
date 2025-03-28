@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { Lobby } from '$lib/types';
+import type { Lobby } from '$lib/types/chess';
 import { getLobbies, updateLobby } from '$lib/scripts/lobbyStore';
 import { ChessColor } from '$lib/types/chess';
 import { resources } from '$lib/resources';

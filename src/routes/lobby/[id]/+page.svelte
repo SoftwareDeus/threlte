@@ -29,6 +29,7 @@
     let interval: number;
     let minutes = 10;
     let increment = 0;
+    let updateTimeout: number;
 
     onMount(() => {
         if (!$playerName) {
@@ -48,8 +49,24 @@
         };
     });
 
+    function isValidTimeControl() {
+        const mins = Number(minutes);
+        const inc = Number(increment);
+        return !isNaN(mins) && !isNaN(inc) && 
+               mins >= 1 && mins <= 60 && 
+               inc >= 0 && inc <= 60;
+    }
+
     async function updateTimeSettings() {
         if (!$playerName || !lobby) return;
+
+        const mins = Number(minutes);
+        const inc = Number(increment);
+
+        if (isNaN(mins) || isNaN(inc) || mins < 1 || mins > 60 || inc < 0 || inc > 60) {
+            error = resources.errors.server.validation.invalidTimeControl;
+            return;
+        }
 
         try {
             const response = await fetch(`/api/lobbies/${lobby.id}/time-settings`, {
@@ -59,25 +76,27 @@
                 },
                 body: JSON.stringify({
                     playerName: $playerName,
-                    timeControl: { minutes, increment }
+                    timeControl: { minutes: mins, increment: inc }
                 })
             });
 
             if (!response.ok) {
-                throw new Error(resources.errors.common.updateFailed);
+                const data = await response.json();
+                throw new Error(data.error || resources.errors.common.updateFailed);
             }
 
             const updatedLobby = await response.json();
             lobby = updatedLobby;
         } catch (e) {
-            error = resources.errors.common.updateFailed;
+            error = e instanceof Error ? e.message : resources.errors.common.updateFailed;
             console.error(e);
         }
     }
 
-    // Watch for changes in timeControl and update the lobby
-    $: if (isHost() && lobby) {
-        updateTimeSettings();
+    // Watch for changes in timeControl and update the lobby with debounce
+    $: if (isHost() && lobby && isValidTimeControl() && lobby.status === 'waiting') {
+        if (updateTimeout) clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(updateTimeSettings, 500);
     }
 
     async function fetchLobby() {

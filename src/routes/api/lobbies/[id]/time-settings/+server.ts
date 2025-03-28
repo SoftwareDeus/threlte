@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
     }
 
     // Validate timeControl structure
-    if (!timeControl.minutes || !timeControl.increment || 
+    if (timeControl.minutes === undefined || timeControl.increment === undefined || 
         typeof timeControl.minutes !== 'number' || 
         typeof timeControl.increment !== 'number' ||
         timeControl.minutes < 1 || 
