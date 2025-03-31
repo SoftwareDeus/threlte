@@ -36,3 +36,5 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/SoftwareDeus/threlte?utm_source=oss&utm_medium=github&utm_campaign=SoftwareDeus%2Fthrelte&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
