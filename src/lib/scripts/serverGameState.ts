@@ -5,7 +5,7 @@ import { ChessColor, ChessPieceType } from '../types/chess';
 const gameStates = new Map<string, GameState>();
 
 // Create initial game state for a lobby
-function getInitialState(
+export function getInitialState(
 	lobbyId: string,
 	timeControl?: { minutes: number; increment: number }
 ): GameState {

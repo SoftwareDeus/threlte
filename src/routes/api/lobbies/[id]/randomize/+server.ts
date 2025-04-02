@@ -1,59 +1,37 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { Lobby } from '$lib/types/chess';
 import { BackendLobbyService } from '$lib/services/backend/lobbyService';
+import * as Sentry from '@sentry/sveltekit';
 import { resources } from '$lib/resources';
-import { ChessColor } from '$lib/types/chess';
 
 export const POST: RequestHandler = async ({ params, request }) => {
-	const { playerName } = await request.json();
-	const lobbyId = params.id;
-
-	if (!playerName) {
-		return json({ error: resources.errors.common.nameRequired }, { status: 400 });
-	}
-
 	try {
-		// Get the lobby
-		const lobby = await BackendLobbyService.getLobby(lobbyId);
+		const { userId } = await request.json();
+		const lobbyId = params.id;
 
-		if (!lobby) {
-			return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
-		}
-
-		if (lobby.host_id !== playerName) {
+		if (!userId) {
+			Sentry.captureMessage('Missing user ID', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.server.validation.playerNameRequired
+				}
+			});
 			return json(
-				{ error: resources.errors.server.validation.onlyHostCanRandomize },
-				{ status: 403 }
-			);
-		}
-
-		if (!lobby.slots.slot2?.player) {
-			return json(
-				{ error: resources.errors.server.validation.needSecondPlayerForRandom },
+				{ error: resources.errors.server.validation.playerNameRequired },
 				{ status: 400 }
 			);
 		}
 
-		const shouldSwap = Math.random() < 0.5;
-		const updatedLobby: Partial<Lobby> = {
-			slots: {
-				slot1: {
-					player: lobby.slots.slot1?.player || '',
-					color: shouldSwap ? ChessColor.Black : ChessColor.White
-				},
-				slot2: {
-					player: lobby.slots.slot2?.player || '',
-					color: shouldSwap ? ChessColor.White : ChessColor.Black
-				}
+		const lobby = await BackendLobbyService.randomizeColors(lobbyId, userId);
+		return json(lobby);
+	} catch (error) {
+		Sentry.captureException(error, {
+			extra: {
+				errorMessage: resources.errors.common.updateFailed
 			}
-		};
-
-		// Update the lobby
-		const result = await BackendLobbyService.updateLobby(lobbyId, updatedLobby);
-		return json(result);
-	} catch (err) {
-		console.error('Error in randomizing lobby colors:', err);
-		return json({ error: resources.errors.common.updateFailed }, { status: 500 });
+		});
+		const errorMessage =
+			error instanceof Error ? error.message : resources.errors.common.updateFailed;
+		return json({ error: errorMessage }, { status: 500 });
 	}
 };

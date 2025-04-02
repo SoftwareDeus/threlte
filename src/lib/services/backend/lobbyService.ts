@@ -48,7 +48,22 @@ export class BackendLobbyService {
 
 	static async createLobby(lobbyData: Omit<Lobby, 'id' | 'created_at' | 'slots'>): Promise<Lobby> {
 		try {
-			const { data, error } = await supabase.from('lobbies').insert([lobbyData]).select().single();
+			// Add default slots structure
+			const dataWithSlots = {
+				...lobbyData,
+				slots: {
+					slot1: {
+						player: lobbyData.host_id,
+						color: ChessColor.White
+					},
+					slot2: lobbyData.player2_id ? {
+						player: lobbyData.player2_id,
+						color: ChessColor.Black
+					} : undefined
+				}
+			};
+
+			const { data, error } = await supabase.from('lobbies').insert([dataWithSlots]).select().single();
 
 			if (error) {
 				console.error('Supabase error creating lobby:', error);
@@ -117,11 +132,24 @@ export class BackendLobbyService {
 				throw new Error(resources.errors.server.validation.cannotJoinOwnLobby);
 			}
 
+			// Update slots for the joining player
+			const updatedSlots = {
+				slot1: lobby.slots?.slot1 || {
+					player: lobby.host_id,
+					color: ChessColor.White
+				},
+				slot2: {
+					player: userId,
+					color: ChessColor.Black
+				}
+			};
+
 			const { data, error } = await supabase
 				.from('lobbies')
 				.update({
 					player2_id: userId,
-					status: 'waiting'
+					status: 'waiting',
+					slots: updatedSlots
 				})
 				.eq('id', id)
 				.select()
@@ -152,12 +180,22 @@ export class BackendLobbyService {
 			if (lobby.player2_id !== userId) {
 				throw new Error(resources.errors.server.validation.notInLobby);
 			}
+			
+			// Update slots when player leaves
+			const updatedSlots = {
+				slot1: lobby.slots?.slot1 || {
+					player: lobby.host_id,
+					color: ChessColor.White
+				},
+				slot2: undefined
+			};
 
 			const { data, error } = await supabase
 				.from('lobbies')
 				.update({
 					player2_id: null,
-					status: 'waiting'
+					status: 'waiting',
+					slots: updatedSlots
 				})
 				.eq('id', id)
 				.select()
@@ -181,40 +219,80 @@ export class BackendLobbyService {
 		timeControl: { minutes: number; increment: number }
 	): Promise<Lobby> {
 		try {
-			const lobby = await this.getLobby(id);
+			console.log(`[Backend] Starting game for lobby ${id} with userId ${userId}`, { timeControl });
+			
+			// Get the current lobby state
+			let lobby;
+			try {
+				lobby = await this.getLobby(id);
+				console.log(`[Backend] Retrieved lobby:`, lobby);
+			} catch (error) {
+				console.error(`[Backend] Failed to get lobby ${id}:`, error);
+				throw new Error(`${resources.errors.server.validation.lobbyNotFound}: ${(error as Error).message}`);
+			}
 
+			// Check host permissions
 			if (lobby.host_id !== userId) {
+				console.error(`[Backend] User ${userId} is not the host of lobby ${id}`);
 				throw new Error(resources.errors.server.validation.notHost);
 			}
 
+			// Check lobby status
 			if (lobby.status !== 'waiting') {
+				console.error(`[Backend] Lobby ${id} is not in waiting status, current status: ${lobby.status}`);
 				throw new Error(resources.errors.server.validation.lobbyNotAvailable);
 			}
 
+			// Check player count
 			if (!lobby.player2_id) {
+				console.error(`[Backend] Lobby ${id} does not have a second player`);
 				throw new Error(resources.errors.server.validation.lobbyNotFull);
 			}
 
-			const { data, error } = await supabase
-				.from('lobbies')
-				.update({
-					status: 'playing',
-					time_control: timeControl,
-					started_at: new Date().toISOString()
-				})
-				.eq('id', id)
-				.select()
-				.single();
+			// Attempt to update the lobby in the database
+			try {
+				const { data, error } = await supabase
+					.from('lobbies')
+					.update({
+						status: 'playing',
+						time_control: timeControl
+					})
+					.eq('id', id)
+					.select()
+					.single();
 
-			if (error) throw error;
-			return data;
+				if (error) {
+					console.error(`[Backend] Supabase error updating lobby ${id}:`, error);
+					throw error;
+				}
+				
+				if (!data) {
+					console.error(`[Backend] No data returned when updating lobby ${id}`);
+					throw new Error('No data returned from database update');
+				}
+				
+				console.log(`[Backend] Successfully started game for lobby ${id}`, data);
+				return data;
+			} catch (dbError) {
+				console.error(`[Backend] Database error when starting game for lobby ${id}:`, dbError);
+				throw new Error(`Database error: ${(dbError as Error).message}`);
+			}
 		} catch (error) {
+			console.error(`[Backend] Failed to start game:`, error);
 			Sentry.captureException(error, {
 				extra: {
-					errorMessage: resources.errors.common.startFailed
+					errorMessage: resources.errors.common.startFailed,
+					lobbyId: id,
+					userId,
+					timeControl
 				}
 			});
-			throw new Error(resources.errors.common.startFailed);
+			// Return the original error message to help with debugging
+			if (error instanceof Error) {
+				throw new Error(`${resources.errors.common.startFailed}: ${error.message}`);
+			} else {
+				throw new Error(resources.errors.common.startFailed);
+			}
 		}
 	}
 

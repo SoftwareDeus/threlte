@@ -6,6 +6,7 @@ create table public.lobbies (
   status text not null,
   created timestamp with time zone not null default timezone ('utc'::text, now()),
   time_control jsonb null,
+  slots jsonb null,
   constraint lobbies_pkey primary key (id),
   constraint lobbies_host_id_fkey foreign KEY (host_id) references auth.users (id),
   constraint lobbies_player2_id_fkey foreign KEY (player2_id) references auth.users (id),
