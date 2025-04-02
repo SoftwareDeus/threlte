@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { T } from '@threlte/core' 
-	import { Color } from 'three'
-	import { interactivity } from '@threlte/extras'
-	import SceneCamera from './SceneCamera.svelte'
+	import { T } from '@threlte/core';
+	import { interactivity } from '@threlte/extras';
+	import SceneCamera from './SceneCamera.svelte';
 	import ChessBoard from '$lib/components/ChessBoard.svelte';
 	import CapturePlatform from './CapturePlatform.svelte';
 	import { gameState } from '$lib/stores/gameStore';
 	import { playerName } from '$lib/stores/playerStore';
-	import type { GameState } from '$lib/types/chess';
+	import type { GameState, Move } from '$lib/types/chess';
 	import { ChessColor } from '$lib/types/chess';
 	import { resources } from '$lib/resources';
 	import * as Sentry from '@sentry/sveltekit';
@@ -17,12 +16,12 @@
 
 	interactivity();
 
-	async function sendMoveToServer(move: any) {
+	async function sendMoveToServer(move: Move) {
 		if (!lobbyId) return;
 
 		try {
 			const updatedState = await makeMove(lobbyId, $playerName, move);
-			
+
 			if (updatedState.lastMove?.pieceId === move.pieceId) {
 				gameState.set(updatedState);
 			}
@@ -36,7 +35,7 @@
 		}
 	}
 
-	gameState.subscribe((state: GameState & { lastMove?: any }) => {
+	gameState.subscribe((state: GameState & { lastMove?: Move }) => {
 		if (lobbyId && state.lastMove) {
 			sendMoveToServer(state.lastMove);
 		}
@@ -51,4 +50,3 @@
 	<CapturePlatform color={ChessColor.Black} />
 	<CapturePlatform color={ChessColor.White} />
 </T.Scene>
-  

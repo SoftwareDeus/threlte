@@ -1,15 +1,15 @@
 ﻿<script lang="ts">
-	import { T } from "@threlte/core";
-	import { onMount } from "svelte";
-	import type { ChessPiece } from "$lib/types/chess";
-	import ChessPieceComponent from "./ChessPiece.svelte";
-	import Tile from "./Tile.svelte";
-	import { gameState } from "$lib/stores/gameStore";
-	import { selectPiece, moveTo } from "$lib/scripts/chessHelpers";
-	import { ChessColor } from "$lib/types/chess";
-	import { lobbyId } from "$lib/stores/lobbyStore";
-	import { playerName } from "$lib/stores/playerStore";
-	import { resources } from "$lib/resources";
+	import { T } from '@threlte/core';
+	import { onMount } from 'svelte';
+	import type { ChessPiece } from '$lib/types/chess';
+	import ChessPieceComponent from './ChessPiece.svelte';
+	import Tile from './Tile.svelte';
+	import { gameState } from '$lib/stores/gameStore';
+	import { selectPiece, moveTo } from '$lib/scripts/chessHelpers';
+	import { ChessColor } from '$lib/types/chess';
+	import { lobbyId } from '$lib/stores/lobbyStore';
+	import { playerName } from '$lib/stores/playerStore';
+	import { resources } from '$lib/resources';
 	import * as Sentry from '@sentry/sveltekit';
 	import { getLobby } from '$lib/services/lobbyService';
 
@@ -43,7 +43,7 @@
 	// Find a piece at a given position
 	function getPieceAtPosition(x: number, y: number): ChessPiece | null {
 		const position = numericToChess(x, y);
-		return pieces.find(p => p.position === position) || null;
+		return pieces.find((p) => p.position === position) || null;
 	}
 
 	// Check if a piece has any valid moves
@@ -57,7 +57,7 @@
 		piecesWithMoves.clear();
 		if (!playerColor || activePlayer !== playerColor) return;
 
-		pieces.forEach(piece => {
+		pieces.forEach((piece) => {
 			if (piece.color === playerColor && hasValidMoves(piece)) {
 				piecesWithMoves.add(piece.position);
 			}
@@ -84,12 +84,17 @@
 
 		try {
 			const lobby = await getLobby(currentLobbyId);
-			playerColor = lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color ? 
-						 (lobby.slots.slot1.color === 'white' ? ChessColor.White : ChessColor.Black) :
-						 lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color ?
-						 (lobby.slots.slot2.color === 'white' ? ChessColor.White : ChessColor.Black) :
-						 null;
-			
+			playerColor =
+				lobby.slots.slot1?.player === $playerName && lobby.slots.slot1?.color
+					? lobby.slots.slot1.color === 'white'
+						? ChessColor.White
+						: ChessColor.Black
+					: lobby.slots.slot2?.player === $playerName && lobby.slots.slot2?.color
+						? lobby.slots.slot2.color === 'white'
+							? ChessColor.White
+							: ChessColor.Black
+						: null;
+
 			updatePiecesWithMoves();
 		} catch (error) {
 			Sentry.captureException(error, {
@@ -97,7 +102,7 @@
 					errorMessage: resources.errors.common.fetchFailed
 				}
 			});
-			console.error("Failed to fetch player color:", error);
+			console.error('Failed to fetch player color:', error);
 		}
 	}
 
@@ -126,14 +131,7 @@
 		if (!selectedPiece) return;
 
 		try {
-			const result = await moveTo(
-				selectedPiece,
-				targetX,
-				targetY,
-				pieces,
-				gameState,
-				activePlayer
-			);
+			await moveTo(selectedPiece, targetX, targetY, pieces, gameState);
 
 			// Reset selection after move
 			selectedPiece = null;
@@ -153,7 +151,7 @@
 		}
 	}
 
-	function handleTileClick(x: number, y: number, event: MouseEvent) {
+	function handleTileClick(x: number, y: number, _event: MouseEvent) {
 		// If we have a selected piece, try to move to this position
 		if (selectedPiece) {
 			handleMove(x, y);
@@ -174,12 +172,13 @@
 </script>
 
 <T.Group>
-	{#each Array(width) as _, x}
-		{#each Array(depth) as _, y}
+	{#each Array(width) as _unused, x}
+		{#each Array(depth) as _unused2, y}
 			<Tile
-				x={x}
-				y={y}
-				tileSize={tileSize}
+				{x}
+				{y}
+				{tileSize}
+				id={`tile-${x}-${y}`}
 				isValidMove={validMoves.some(([mx, my]) => mx === x && my === y)}
 				isUnderAttackField={threatFields.some(([mx, my]) => mx === x && my === y)}
 				hasPieceWithValidMove={hasPieceWithValidMove(x, y)}

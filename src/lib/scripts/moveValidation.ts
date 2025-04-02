@@ -17,15 +17,9 @@ function chessToNumeric(position: string): [number, number] {
 }
 
 // Helper function: Find a piece at a specific position
-export function getPieceAtPosition(
-	x: number,
-	y: number,
-	pieces: ChessPiece[]
-): ChessPiece | null {
+export function getPieceAtPosition(x: number, y: number, pieces: ChessPiece[]): ChessPiece | null {
 	const position = numericToChess(x, y);
-	return pieces.find(
-		(piece) => piece.position === position
-	) || null;
+	return pieces.find((piece) => piece.position === position) || null;
 }
 
 // Validation logic for pawn moves
@@ -61,18 +55,16 @@ function validatePawnMove(
 
 	// 3. Diagonal capture (if opponent is there)
 	const targetPiece = getPieceAtPosition(targetX, targetY, pieces);
-	return !!(Math.abs(targetX - currentX) === 1 &&
+	return !!(
+		Math.abs(targetX - currentX) === 1 &&
 		targetY === currentY + direction &&
 		targetPiece &&
-		targetPiece.color !== piece.color);
+		targetPiece.color !== piece.color
+	);
 }
 
 // Validation logic for knight moves
-function validateKnightMove(
-	piece: ChessPiece,
-	targetX: number,
-	targetY: number
-): boolean {
+function validateKnightMove(piece: ChessPiece, targetX: number, targetY: number): boolean {
 	const [currentX, currentY] = chessToNumeric(piece.position);
 	const dx = Math.abs(targetX - currentX);
 	const dy = Math.abs(targetY - currentY);
@@ -136,16 +128,14 @@ function validateQueenMove(
 	targetY: number,
 	pieces: ChessPiece[]
 ): boolean {
-	return validateRookMove(piece, targetX, targetY, pieces) ||
-		validateBishopMove(piece, targetX, targetY, pieces);
+	return (
+		validateRookMove(piece, targetX, targetY, pieces) ||
+		validateBishopMove(piece, targetX, targetY, pieces)
+	);
 }
 
 // Validation logic for king moves
-function validateKingMove(
-	piece: ChessPiece,
-	targetX: number,
-	targetY: number
-): boolean {
+function validateKingMove(piece: ChessPiece, targetX: number, targetY: number): boolean {
 	const [currentX, currentY] = chessToNumeric(piece.position);
 	const dx = Math.abs(targetX - currentX);
 	const dy = Math.abs(targetY - currentY);
@@ -182,12 +172,8 @@ export function validateMove(
 	}
 }
 
-export function getValidMoves(
-	piece: ChessPiece,
-	pieces: ChessPiece[]
-): [number, number][] {
+export function getValidMoves(piece: ChessPiece, pieces: ChessPiece[]): [number, number][] {
 	const moves: [number, number][] = [];
-	const [currentX, currentY] = chessToNumeric(piece.position);
 
 	// Check all possible positions
 	for (let x = 0; x < 8; x++) {

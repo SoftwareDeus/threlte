@@ -1,52 +1,55 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { Lobby } from '$lib/types/chess';
-import { getLobbies, updateLobby } from '$lib/scripts/lobbyStore';
 import { ChessColor } from '$lib/types/chess';
 import { resources } from '$lib/resources';
+import { BackendLobbyService } from '$lib/services/backend/lobbyService';
+import * as Sentry from '@sentry/sveltekit';
 
 export const POST: RequestHandler = async ({ params, request }) => {
-    const { playerName, targetPlayer, color } = await request.json();
-    const lobbyId = params.id;
+	try {
+		const { userId, targetPlayer, color } = await request.json();
 
-    if (!playerName || !targetPlayer || !color) {
-        return json({ error: resources.errors.server.validation.missingRequiredFields }, { status: 400 });
-    }
+		if (!userId || !targetPlayer || !color) {
+			Sentry.captureMessage('Missing required fields', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.server.validation.missingRequiredFields
+				}
+			});
+			return json(
+				{ error: resources.errors.server.validation.missingRequiredFields },
+				{ status: 400 }
+			);
+		}
 
-    if (color !== ChessColor.White && color !== ChessColor.Black && color !== ChessColor.Random) {
-        return json({ error: resources.errors.server.validation.invalidColor }, { status: 400 });
-    }
+		const validColors = [ChessColor.White, ChessColor.Black];
+		if (!validColors.includes(color as ChessColor)) {
+			Sentry.captureMessage('Invalid color', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.server.validation.invalidColor,
+					providedColor: color
+				}
+			});
+			return json({ error: resources.errors.server.validation.invalidColor }, { status: 400 });
+		}
 
-    const currentLobbies = getLobbies();
-    const lobby = currentLobbies.find(l => l.id === lobbyId);
-    
-    if (!lobby) {
-        return json({ error: resources.errors.server.validation.lobbyNotFound }, { status: 404 });
-    }
-
-    if (lobby.host !== playerName) {
-        return json({ error: resources.errors.server.validation.onlyHostCanSetColors }, { status: 403 });
-    }
-
-    if (lobby.slots.slot1?.player !== targetPlayer && lobby.slots.slot2?.player !== targetPlayer) {
-        return json({ error: resources.errors.server.validation.targetPlayerNotFound }, { status: 400 });
-    }
-
-    const updatedLobby: Lobby = {
-        ...lobby,
-        slots: {
-            slot1: {
-                player: lobby.slots.slot1?.player,
-                color: lobby.slots.slot1?.player === targetPlayer ? color : (color === ChessColor.White ? ChessColor.Black : color === ChessColor.Black ? ChessColor.White : ChessColor.Random)
-            },
-            slot2: {
-                player: lobby.slots.slot2?.player,
-                color: lobby.slots.slot2?.player === targetPlayer ? color : (color === ChessColor.White ? ChessColor.Black : color === ChessColor.Black ? ChessColor.White : ChessColor.Random)
-            }
-        }
-    };
-
-    updateLobby(lobbyId, updatedLobby);
-
-    return json(updatedLobby);
-}; 
+		const lobby = await BackendLobbyService.setPlayerColor(
+			params.id,
+			userId,
+			targetPlayer,
+			color as ChessColor
+		);
+		return json(lobby);
+	} catch (error: unknown) {
+		Sentry.captureException(error, {
+			extra: {
+				errorMessage: resources.errors.common.updateFailed,
+				context: 'set-color endpoint'
+			}
+		});
+		const errorMessage =
+			error instanceof Error ? error.message : resources.errors.common.updateFailed;
+		return json({ error: errorMessage }, { status: 500 });
+	}
+};

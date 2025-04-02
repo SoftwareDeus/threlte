@@ -1,10 +1,10 @@
-﻿import type { ChessPiece, GameState } from "$lib/types/chess";
-import { ChessColor } from "$lib/types/chess";
-import { validateMove, getValidMoves } from "./moveValidation";
-import { gameState } from "$lib/stores/gameStore";
-import { lobbyId } from "$lib/stores/lobbyStore";
-import { playerName } from "$lib/stores/playerStore";
-import { get } from "svelte/store";
+﻿import type { ChessPiece } from '$lib/types/chess';
+import { ChessColor } from '$lib/types/chess';
+import { validateMove, getValidMoves } from './moveValidation';
+import { gameState } from '$lib/stores/gameStore';
+import { lobbyId } from '$lib/stores/lobbyStore';
+import { playerName } from '$lib/stores/playerStore';
+import { get } from 'svelte/store';
 import * as Sentry from '@sentry/sveltekit';
 import { resources } from '$lib/resources';
 
@@ -16,7 +16,7 @@ function numericToChess(x: number, y: number): string {
 }
 
 // Convert chess notation to numeric coordinates
-function chessToNumeric(position: string): [number, number] {
+export function chessToNumeric(position: string): [number, number] {
 	const [file, rank] = position.split('');
 	const x = file.charCodeAt(0) - 'a'.charCodeAt(0);
 	const y = 8 - parseInt(rank);
@@ -24,22 +24,16 @@ function chessToNumeric(position: string): [number, number] {
 }
 
 // Find a piece at a specific position
-export function getPieceAtPosition(
-	x: number,
-	y: number,
-	pieces: ChessPiece[]
-): ChessPiece | null {
+export function getPieceAtPosition(x: number, y: number, pieces: ChessPiece[]): ChessPiece | null {
 	const position = numericToChess(x, y);
-	return pieces.find(
-		(piece) => piece.position === position
-	) || null;
+	return pieces.find((piece) => piece.position === position) || null;
 }
 
 // Select a piece and calculate its possible moves
 export function selectPiece(
 	selectedPiece: ChessPiece | null,
 	activePlayer: ChessColor,
-	pieces: ChessPiece[],
+	pieces: ChessPiece[]
 ): { selected: ChessPiece | null; moves: [number, number][] } {
 	if (!selectedPiece) return { selected: null, moves: [] };
 	if (selectedPiece.color !== activePlayer) return { selected: null, moves: [] };
@@ -56,8 +50,7 @@ export async function moveTo(
 	targetX: number,
 	targetY: number,
 	pieces: ChessPiece[],
-	store: typeof gameState,
-	activePlayer: ChessColor,
+	store: typeof gameState
 ): Promise<{ resetSelection: () => void }> {
 	if (!selectedPiece) return { resetSelection: () => {} };
 	if (!validateMove(selectedPiece, targetX, targetY, pieces)) {
@@ -71,10 +64,9 @@ export async function moveTo(
 	};
 
 	try {
-		const currentState = get(store);
 		const currentLobbyId = get(lobbyId);
 		const currentPlayerName = get(playerName);
-		
+
 		if (!currentLobbyId) {
 			Sentry.captureMessage('Missing lobby ID', {
 				level: 'error',
@@ -100,7 +92,7 @@ export async function moveTo(
 		const response = await fetch(`/api/game/${currentLobbyId}`, {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
 				playerName: currentPlayerName,

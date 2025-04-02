@@ -1,11 +1,13 @@
 ﻿# Threlte Chess Game TODO List
 
 ## Core Game Features
+
 - [ ] Add check/checkmate detection
 - [ ] Add special moves (castling, en passant, pawn promotion)
 - [ ] Add move history tracking
 
 ## Multiplayer Features
+
 - [ ] Set up WebSocket connection for real-time gameplay
 - [ ] Add player matching system
 - [ ] Create spectator mode
@@ -14,6 +16,7 @@
 - [ ] Add game state synchronization
 
 ## UI/UX
+
 - [ ] Add loading states and transitions
 - [ ] Create piece movement animations
 - [ ] Implement drag-and-drop piece movement
@@ -22,6 +25,7 @@
 - [ ] Implement dark/light theme toggle
 
 ## Player Features
+
 - [ ] Create player profiles
 - [ ] Add player statistics tracking
 - [ ] Implement rating system
@@ -30,6 +34,7 @@
 - [ ] Add player chat system
 
 ## Technical Improvements
+
 - [ ] Fix import T bug in compile
 - [ ] Set up proper TypeScript configurations
 - [ ] Implement proper error handling with Sentry
@@ -40,6 +45,7 @@
 - [ ] Add performance monitoring
 
 ## Documentation
+
 - [ ] Create API documentation
 - [ ] Write setup instructions
 - [ ] Add code documentation
@@ -48,6 +54,7 @@
 - [ ] Add contribution guidelines
 
 ## Polish
+
 - [ ] Add sound effects
 - [ ] Implement particle effects for captures
 - [ ] Add game replay feature
@@ -57,6 +64,7 @@
 - [ ] Add game export/import features
 
 ## Security
+
 - [ ] Implement proper authentication
 - [ ] Add rate limiting
 - [ ] Set up input validation
@@ -65,6 +73,7 @@
 - [ ] Add session management
 
 ## Deployment
+
 - [ ] Set up CI/CD pipeline
 - [ ] Configure production environment
 - [ ] Add monitoring and alerting

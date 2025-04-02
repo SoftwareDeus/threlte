@@ -3,7 +3,7 @@ import { ui } from './ui';
 import { config } from './config';
 
 export const resources = {
-    errors,
-    ui,
-    config
-}; 
+	errors,
+	ui,
+	config
+};

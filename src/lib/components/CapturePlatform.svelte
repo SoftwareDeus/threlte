@@ -1,43 +1,34 @@
 <script lang="ts">
-	import { T } from "@threlte/core";
-	import { gameState } from "$lib/stores/gameStore";
-	import ChessPieceComponent from "./ChessPiece.svelte";
-	import { resources } from "$lib/resources";
-	import { ChessColor } from "$lib/types/chess";
+	import { T } from '@threlte/core';
+	import { interactivity } from '@threlte/extras';
+	import { ChessColor } from '$lib/types/chess';
+	import type { ChessPiece } from '$lib/types/chess';
 
-	export let color: ChessColor;
+	export let color: 'white' | 'black';
+	export let capturedPieces: ChessPiece[] = [];
 
-	$: capturedPieces = $gameState.capturedPieces[color === ChessColor.White ? 'white' : 'black'];
+	// Define constants for positions
+	const whitePlatformPosition: [number, number, number] = [-5, 0, 0];
+	const blackPlatformPosition: [number, number, number] = [5, 0, 0];
 
-	$: platformX = 0;
-	$: platformY = 0.05;
-	$: platformZ = color === ChessColor.White ? resources.config.capturePlatform.whiteZ : resources.config.capturePlatform.blackZ;
+	// Reactive statement for the position based on the color prop
+	$: platformPosition = color === 'white' ? whitePlatformPosition : blackPlatformPosition;
 
-	function handlePieceClick() {
-		return;
-	}
+	interactivity();
 </script>
 
-<T.Group position={[platformX, platformY, platformZ]}>
-	<T.Mesh>
-		<T.BoxGeometry args={[
-			resources.config.capturePlatform.width,
-			resources.config.capturePlatform.height,
-			resources.config.capturePlatform.depth
-		]} />
-		<T.MeshStandardMaterial color="#4a4a4a" />
+<T.Group position={platformPosition}>
+	<T.Mesh position={[0, -0.1, 0]}>
+		<T.BoxGeometry args={[2, 0.2, 4]} />
+		<T.MeshStandardMaterial color={color === 'white' ? '#f0f0f0' : '#333333'} />
 	</T.Mesh>
 
 	{#each capturedPieces as piece, i}
-		<ChessPieceComponent
-			type={piece.type}
-			color={piece.color}
-			position={[
-				(i - (capturedPieces.length - 1) / 2) * resources.config.capturePlatform.pieceSpacing,
-				resources.config.capturePlatform.pieceHeight,
-				0
-			]}
-			onclickDelegate={handlePieceClick}
-		/>
+		<T.Group position={[0, 0.2 + i * 0.5, 0]}>
+			<T.Mesh>
+				<T.SphereGeometry args={[0.2]} />
+				<T.MeshStandardMaterial color={piece.color === ChessColor.White ? '#ffffff' : '#000000'} />
+			</T.Mesh>
+		</T.Group>
 	{/each}
-</T.Group> 
+</T.Group>

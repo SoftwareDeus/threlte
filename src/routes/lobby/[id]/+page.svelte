@@ -1,337 +1,308 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
-    import { authStore } from '$lib/stores/authStore';
-    import { lobbyId } from '$lib/stores/lobbyStore';
-    import { resources } from '$lib/resources';
-    import { ChessColor } from '$lib/types/chess';
-    import type { ColorSelection, Lobby } from '$lib/types/chess';
-    import * as Sentry from '@sentry/sveltekit';
-    import LobbyDetail from '$lib/components/lobby/LobbyDetail.svelte';
-    import { 
-        getLobby, 
-        updateTimeSettings as updateLobbyTimeSettings, 
-        startLobby, 
-        randomizeLobby, 
-        setPlayerColor as setLobbyPlayerColor, 
-        deleteLobby as deleteLobbyService 
-    } from '$lib/services/lobbyService';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { authStore } from '$lib/stores/authStore';
+	import { lobbyId } from '$lib/stores/lobbyStore';
+	import { resources } from '$lib/resources';
+	import { ChessColor } from '$lib/types/chess';
+	import type { Lobby } from '$lib/types/chess';
+	import * as Sentry from '@sentry/sveltekit';
+	import LobbyDetail from '$lib/components/lobby/LobbyDetail.svelte';
+	import {
+		getLobby,
+		updateTimeSettings as updateLobbyTimeSettings,
+		startGame,
+		randomizeLobby,
+		setPlayerColor as setLobbyPlayerColor,
+		deleteLobby as deleteLobbyService
+	} from '$lib/services/lobbyService';
 
-    let lobby: Lobby | null = null;
-    let error = '';
-    let interval: ReturnType<typeof setInterval>;
-    let minutes = 10;
-    let increment = 0;
-    let updateTimeout: ReturnType<typeof setTimeout>;
-    let isHostValue = false;
+	let lobby: Lobby | null = null;
+	let error = '';
+	let minutes = 10;
+	let increment = 0;
+	let updateTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isHostValue = false;
 
-    $: isHostValue = lobby?.host_id === $authStore.user?.id;
+	$: isHostValue = lobby?.host_id === $authStore.user?.id;
 
-    function isHost(): boolean {
-        return isHostValue;
-    }
+	function isHost(): boolean {
+		return isHostValue;
+	}
 
-    function handleTimeControlUpdate() {
-        if (isHost() && lobby && isValidTimeControl() && lobby.status === 'waiting') {
-            if (updateTimeout) clearTimeout(updateTimeout);
-            updateTimeout = setTimeout(updateTimeSettings, 500);
-        }
-    }
+	function isValidTimeControl() {
+		const mins = Number(minutes);
+		const inc = Number(increment);
+		return !isNaN(mins) && !isNaN(inc) && mins >= 1 && mins <= 60 && inc >= 0 && inc <= 60;
+	}
 
-    // Watch for changes in timeControl and update the lobby with debounce
-    $: {
-        handleTimeControlUpdate();
-    }
+	function handleTimeControlUpdate() {
+		if (isHost() && lobby && isValidTimeControl() && lobby.status === 'waiting') {
+			if (updateTimeout) clearTimeout(updateTimeout);
+			updateTimeout = setTimeout(updateTimeSettings, 500);
+		}
+	}
 
-    onMount(async () => {
-        try {
-            if (!$authStore.user?.id) {
-                Sentry.captureMessage('User not authenticated', {
-                    level: 'error',
-                    extra: {
-                        errorMessage: resources.errors.common.authRequired
-                    }
-                });
-                error = resources.errors.common.authRequired;
-                setTimeout(() => goto('/auth'), 2000);
-                return;
-            }
+	$: if (typeof window !== 'undefined') {
+		void (minutes && increment);
+		handleTimeControlUpdate();
+	}
 
-            if (!$lobbyId) {
-                Sentry.captureMessage('Missing lobby ID', {
-                    level: 'error',
-                    extra: {
-                        errorMessage: resources.errors.common.genericError
-                    }
-                });
-                error = resources.errors.common.genericError;
-                setTimeout(() => goto('/lobby'), 2000);
-                return;
-            }
+	onMount(async () => {
+		try {
+			if (!$authStore.user?.id) {
+				Sentry.captureMessage('User not authenticated', {
+					level: 'error',
+					extra: {
+						errorMessage: resources.errors.common.authRequired
+					}
+				});
+				error = resources.errors.common.authRequired;
+				setTimeout(() => goto('/auth'), 2000);
+				return;
+			}
 
-            await fetchLobby();
-            interval = setInterval(fetchLobby, 1000);
-        } catch (error) {
-            Sentry.captureException(error, {
-                extra: {
-                    errorMessage: resources.errors.common.fetchFailed
-                }
-            });
-            error = resources.errors.common.fetchFailed;
-        }
-    });
+			if (!$lobbyId) {
+				Sentry.captureMessage('Missing lobby ID', {
+					level: 'error',
+					extra: {
+						errorMessage: resources.errors.common.genericError
+					}
+				});
+				error = resources.errors.common.genericError;
+				setTimeout(() => goto('/lobby'), 2000);
+				return;
+			}
 
-    function isValidTimeControl() {
-        const mins = Number(minutes);
-        const inc = Number(increment);
-        return !isNaN(mins) && !isNaN(inc) && 
-               mins >= 1 && mins <= 60 && 
-               inc >= 0 && inc <= 60;
-    }
+			await fetchLobby();
+		} catch (e: unknown) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.fetchFailed
+				}
+			});
+			error = resources.errors.common.fetchFailed;
+		}
+	});
 
-    async function updateTimeSettings() {
-        if (!$authStore.user?.id) {
-            Sentry.captureMessage('User not authenticated', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.authRequired
-                }
-            });
-            error = resources.errors.common.authRequired;
-            setTimeout(() => goto('/auth'), 2000);
-            return;
-        }
+	async function updateTimeSettings() {
+		if (!$authStore.user?.id) {
+			Sentry.captureMessage('User not authenticated', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.common.authRequired
+				}
+			});
+			error = resources.errors.common.authRequired;
+			setTimeout(() => goto('/auth'), 2000);
+			return;
+		}
 
-        if (!$lobbyId) {
-            Sentry.captureMessage('Missing lobby ID', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.genericError
-                }
-            });
-            error = resources.errors.common.genericError;
-            setTimeout(() => goto('/lobby'), 2000);
-            return;
-        }
+		if (!$lobbyId) {
+			Sentry.captureMessage('Missing lobby ID', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.common.genericError
+				}
+			});
+			error = resources.errors.common.genericError;
+			setTimeout(() => goto('/lobby'), 2000);
+			return;
+		}
 
-        if (!isValidTimeControl()) {
-            Sentry.captureMessage('Invalid time control settings', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.genericError
-                }
-            });
-            error = resources.errors.common.genericError;
-            return;
-        }
+		if (!isValidTimeControl()) {
+			Sentry.captureMessage('Invalid time control settings', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.common.genericError
+				}
+			});
+			error = resources.errors.common.genericError;
+			return;
+		}
 
-        try {
-            await updateLobbyTimeSettings($lobbyId, $authStore.user.id, { minutes, increment });
-            lobby = await fetchLobby();
-        } catch (e) {
-            Sentry.captureException(e, {
-                extra: {
-                    errorMessage: resources.errors.common.updateFailed
-                }
-            });
-            console.error(e);
-            error = resources.errors.common.updateFailed;
-        }
-    }
+		try {
+			await updateLobbyTimeSettings($lobbyId, $authStore.user.id, { minutes, increment });
+			lobby = await fetchLobby();
+			error = '';
+		} catch (e: unknown) {
+			const errorMessage = e instanceof Error ? e.message : 'Failed to update time settings';
+			error = errorMessage;
+			console.error('Failed to update time settings:', e);
+			Sentry.captureException(e);
+		} finally {
+			updateTimeout = null;
+		}
+	}
 
-    async function fetchLobby(): Promise<Lobby> {
-        if (!$lobbyId) {
-            throw new Error('No lobby ID provided');
-        }
+	async function fetchLobby(): Promise<Lobby> {
+		if (!$lobbyId) {
+			throw new Error('No lobby ID provided');
+		}
 
-        try {
-            const fetchedLobby = await getLobby($lobbyId);
-            lobby = fetchedLobby;
-            return fetchedLobby;
-        } catch (e) {
-            if (e instanceof Error && e.message === resources.errors.server.validation.lobbyNotFound) {
-                error = resources.errors.server.validation.lobbyNotFound;
-                setTimeout(() => goto('/lobby'), 2000);
-            } else {
-                throw e;
-            }
-            throw e;
-        }
-    }
+		try {
+			const fetchedLobby = await getLobby($lobbyId);
+			lobby = fetchedLobby;
+			error = '';
+			return fetchedLobby;
+		} catch (e: unknown) {
+			if (e instanceof Error && e.message === resources.errors.server.validation.lobbyNotFound) {
+				error = resources.errors.server.validation.lobbyNotFound;
+				setTimeout(() => goto('/lobby'), 2000);
+			} else {
+				const errorMessage = e instanceof Error ? e.message : 'Failed to fetch lobby';
+				error = errorMessage;
+				console.error('Failed to fetch lobby:', e);
+				Sentry.captureException(e);
+			}
+			throw e;
+		}
+	}
 
-    async function startGame() {
-        if (!$authStore.user?.id) {
-            Sentry.captureMessage('User not authenticated', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.authRequired
-                }
-            });
-            error = resources.errors.common.authRequired;
-            setTimeout(() => goto('/auth'), 2000);
-            return;
-        }
+	async function startGameHandler() {
+		if (!$authStore.user?.id || !lobby) return;
 
-        if (!lobbyId) {
-            Sentry.captureMessage('Missing lobby ID', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.genericError
-                }
-            });
-            error = resources.errors.common.genericError;
-            setTimeout(() => goto('/lobby'), 2000);
-            return;
-        }
+		if (!isValidTimeControl()) {
+			error = resources.errors.server.validation.invalidTimeControl;
+			return;
+		}
 
-        if (!lobby) {
-            Sentry.captureMessage('Lobby not found', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.genericError
-                }
-            });
-            error = resources.errors.common.genericError;
-            return;
-        }
+		try {
+			const updatedLobby = await startGame(lobby.id, $authStore.user.id, { minutes, increment });
+			lobby = updatedLobby;
+			await goto(`/game/${lobby.id}`);
+		} catch (e: unknown) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.startFailed,
+					lobbyId: lobby.id
+				}
+			});
+			console.error('Start Game Error:', e);
+			error = e instanceof Error ? e.message : resources.errors.common.startFailed;
+		}
+	}
 
-        try {
-            await startLobby(lobby.id, $authStore.user.id, { minutes, increment });
-            lobbyId.set(lobby.id);
-            goto('/game');
-        } catch (e) {
-            Sentry.captureException(e, {
-                extra: {
-                    errorMessage: resources.errors.common.startFailed
-                }
-            });
-            console.error(e);
-            error = resources.errors.common.startFailed;
-        }
-    }
+	async function randomizePlayers() {
+		if (!$authStore.user?.id) {
+			Sentry.captureMessage('User not authenticated', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.common.authRequired
+				}
+			});
+			error = resources.errors.common.authRequired;
+			setTimeout(() => goto('/auth'), 2000);
+			return;
+		}
 
-    async function randomizePlayers() {
-        if (!$authStore.user?.id) {
-            Sentry.captureMessage('User not authenticated', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.authRequired
-                }
-            });
-            error = resources.errors.common.authRequired;
-            setTimeout(() => goto('/auth'), 2000);
-            return;
-        }
+		if (!$lobbyId) {
+			Sentry.captureMessage('Missing lobby ID', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.common.genericError
+				}
+			});
+			error = resources.errors.common.genericError;
+			setTimeout(() => goto('/lobby'), 2000);
+			return;
+		}
 
-        if (!lobbyId) {
-            Sentry.captureMessage('Missing lobby ID', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.genericError
-                }
-            });
-            error = resources.errors.common.genericError;
-            setTimeout(() => goto('/lobby'), 2000);
-            return;
-        }
+		if (!lobby) {
+			Sentry.captureMessage('Lobby not found', {
+				level: 'error',
+				extra: {
+					errorMessage: resources.errors.common.genericError
+				}
+			});
+			error = resources.errors.common.genericError;
+			return;
+		}
 
-        if (!lobby) {
-            Sentry.captureMessage('Lobby not found', {
-                level: 'error',
-                extra: {
-                    errorMessage: resources.errors.common.genericError
-                }
-            });
-            error = resources.errors.common.genericError;
-            return;
-        }
+		try {
+			lobby = await randomizeLobby(lobby.id, $authStore.user.id);
+		} catch (e) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.updateFailed
+				}
+			});
+			console.error(e);
+			error = resources.errors.common.updateFailed;
+		}
+	}
 
-        try {
-            lobby = await randomizeLobby(lobby.id, $authStore.user.id);
-        } catch (e) {
-            Sentry.captureException(e, {
-                extra: {
-                    errorMessage: resources.errors.common.updateFailed
-                }
-            });
-            console.error(e);
-            error = resources.errors.common.updateFailed;
-        }
-    }
+	async function setPlayerColor(targetPlayer: string, color: ChessColor) {
+		if (!$authStore.user?.id || !lobby) return;
 
-    async function setPlayerColor(targetPlayer: string, color: ChessColor) {
-        if (!$authStore.user?.id || !lobby) return;
+		try {
+			await setLobbyPlayerColor(lobby.id, $authStore.user.id, targetPlayer, color);
+			lobby = await fetchLobby();
+		} catch (e) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.updateFailed
+				}
+			});
+			console.error(e);
+			error = resources.errors.common.updateFailed;
+		}
+	}
 
-        try {
-            await setLobbyPlayerColor(lobby.id, $authStore.user.id, targetPlayer, color);
-            lobby = await fetchLobby();
-        } catch (e) {
-            Sentry.captureException(e, {
-                extra: {
-                    errorMessage: resources.errors.common.updateFailed
-                }
-            });
-            console.error(e);
-            error = resources.errors.common.updateFailed;
-        }
-    }
+	async function deleteLobby() {
+		if (!$authStore.user?.id || !lobby) return;
 
-    async function deleteLobby() {
-        if (!$authStore.user?.id || !lobby) return;
+		try {
+			await deleteLobbyService(lobby.id, $authStore.user.id);
+			goto('/lobby');
+		} catch (e) {
+			Sentry.captureException(e, {
+				extra: {
+					errorMessage: resources.errors.common.deleteFailed
+				}
+			});
+			console.error(e);
+			error = resources.errors.common.deleteFailed;
+		}
+	}
 
-        try {
-            await deleteLobbyService(lobby.id, $authStore.user.id);
-            goto('/lobby');
-        } catch (e) {
-            Sentry.captureException(e, {
-                extra: {
-                    errorMessage: resources.errors.common.deleteFailed
-                }
-            });
-            console.error(e);
-            error = resources.errors.common.deleteFailed;
-        }
-    }
-
-    function handleColorChange(slot: 1 | 2, color: ChessColor) {
-        if (!lobby) return;
-        const targetPlayer = slot === 1 ? lobby.host_id : lobby.player2_id;
-        if (targetPlayer) {
-            setPlayerColor(targetPlayer, color);
-        }
-    }
+	function handleColorChange(slot: 1 | 2, color: ChessColor) {
+		if (!lobby) return;
+		const targetPlayer = slot === 1 ? lobby.host_id : lobby.player2_id;
+		if (targetPlayer) {
+			setPlayerColor(targetPlayer, color);
+		}
+	}
 </script>
 
-<div class="w-screen h-screen bg-[#1a1a1a] text-white font-sans p-8">
-    {#if lobby}
-        <LobbyDetail
-            {lobby}
-            isHost={isHostValue}
-            {minutes}
-            {increment}
-            onMinutesChange={(value) => minutes = value}
-            onIncrementChange={(value) => increment = value}
-            onColorChange={handleColorChange}
-            onStart={startGame}
-            onDelete={deleteLobby}
-            onRandomize={randomizePlayers}
-        />
-    {:else}
-        <div class="flex items-center justify-center h-full">
-            <div class="text-xl">Loading...</div>
-        </div>
-    {/if}
+<div class="h-screen w-screen bg-[#1a1a1a] p-8 font-sans text-white">
+	{#if lobby}
+		<LobbyDetail
+			{lobby}
+			isHost={isHostValue}
+			{minutes}
+			{increment}
+			onMinutesChange={(value) => (minutes = value)}
+			onIncrementChange={(value) => (increment = value)}
+			onColorChange={handleColorChange}
+			onStartGame={startGameHandler}
+			onDelete={deleteLobby}
+			onRandomize={randomizePlayers}
+		/>
+	{:else}
+		<div class="flex h-full items-center justify-center">
+			<div class="text-xl">Loading...</div>
+		</div>
+	{/if}
 
-    {#if error}
-        <div class="fixed bottom-4 right-4 bg-red-500/90 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-4">
-            <span>{error}</span>
-            <button
-                on:click={() => error = ''}
-                class="text-white hover:text-white/80"
-            >
-                {resources.errors.common.closeButton}
-            </button>
-        </div>
-    {/if}
-</div> 
+	{#if error}
+		<div
+			class="fixed right-4 bottom-4 flex items-center gap-4 rounded-lg bg-red-500/90 px-6 py-3 text-white shadow-lg"
+		>
+			<span>{error}</span>
+			<button on:click={() => (error = '')} class="text-white hover:text-white/80">
+				{resources.errors.common.closeButton}
+			</button>
+		</div>
+	{/if}
+</div>
