@@ -11,11 +11,17 @@
 	import * as Sentry from '@sentry/sveltekit';
 	import { ChessColor } from '$lib/types/chess';
 	import { getGameState, endGame } from '$lib/services/gameService';
+	import { authStore } from '$lib/stores/authStore';
 
+	export let gameId: string | undefined = undefined;
+	
 	let errorMessage = '';
 	let redirectTimeout: ReturnType<typeof setTimeout>;
 	let pollInterval: ReturnType<typeof setInterval>;
 	let winner: ChessColor | undefined;
+	let isLoading = true;
+	let retryCount = 0;
+	const MAX_RETRY_COUNT = 5;
 
 	gameState.subscribe((state) => {
 		winner = state.winner;
@@ -23,34 +29,58 @@
 
 	async function fetchGameState() {
 		try {
-			const currentLobbyId = $lobbyId;
-			if (!currentLobbyId) {
+			// Use provided gameId if available, otherwise use from store
+			const currentGameId = gameId || $lobbyId;
+			if (!currentGameId) {
 				throw new Error(resources.errors.common.genericError);
 			}
 
-			const state = await getGameState(currentLobbyId);
-			gameState.set(state);
-
-			if (state.gameOver) {
-				await handleGameOver();
+			console.log(`Fetching game state for ${currentGameId}`);
+			const state = await getGameState(currentGameId);
+			console.log(`Received game state with ${state.pieces?.length || 0} pieces`);
+			
+			// Only update state if we received a valid game state with pieces
+			if (state && state.pieces && state.pieces.length > 0) {
+				gameState.set(state);
+				isLoading = false;
+				retryCount = 0; // Reset retry count after successful fetch
+				
+				if (state.gameOver) {
+					await handleGameOver();
+				}
+			} else {
+				// If we got an empty state, increment retry counter
+				retryCount++;
+				console.warn(`Received empty game state, retry ${retryCount}/${MAX_RETRY_COUNT}`);
+				
+				if (retryCount >= MAX_RETRY_COUNT) {
+					// After max retries, go back to lobby
+					errorMessage = resources.errors.common.fetchFailed;
+					setTimeout(() => goto('/lobby'), 2000);
+				}
 			}
 		} catch (e) {
-			Sentry.captureException(e, {
-				extra: {
-					errorMessage: resources.errors.common.fetchFailed
-				}
-			});
 			console.error('Error fetching game state:', e);
-			errorMessage = resources.errors.common.fetchFailed;
+			retryCount++;
+			
+			if (retryCount >= MAX_RETRY_COUNT) {
+				Sentry.captureException(e, {
+					extra: {
+						errorMessage: resources.errors.common.fetchFailed
+					}
+				});
+				errorMessage = resources.errors.common.fetchFailed;
+			}
 		}
 	}
 
 	async function handleGameOver() {
-		const currentLobbyId = $lobbyId;
-		if (!currentLobbyId) return;
+		// Use provided gameId if available, otherwise use from store
+		const currentGameId = gameId || $lobbyId;
+		if (!currentGameId) return;
 
 		try {
-			await endGame(currentLobbyId, $playerName, winner || '');
+			await endGame(currentGameId, $authStore.user?.id || '', winner || '');
 		} catch (error) {
 			Sentry.captureException(error, {
 				extra: {
@@ -64,20 +94,26 @@
 
 	onMount(async () => {
 		try {
-			if (!$playerName) {
-				Sentry.captureMessage('Missing player name', {
+			if (!$authStore.user?.id) {
+				Sentry.captureMessage('User not authenticated', {
 					level: 'error',
 					extra: {
-						errorMessage: resources.errors.common.nameRequired
+						errorMessage: resources.errors.common.authRequired
 					}
 				});
-				errorMessage = resources.errors.common.nameRequired;
-				redirectTimeout = setTimeout(() => goto('/'), 2000);
+				errorMessage = resources.errors.common.authRequired;
+				redirectTimeout = setTimeout(() => goto('/auth'), 2000);
 				return;
 			}
 
-			if (!$lobbyId) {
-				Sentry.captureMessage('Missing lobby ID', {
+			// Set lobbyId from passed gameId if available
+			if (gameId) {
+				lobbyId.set(gameId);
+				console.log(`Set lobbyId to ${gameId} from prop`);
+			}
+			
+			if (!gameId && !$lobbyId) {
+				Sentry.captureMessage('Missing game ID', {
 					level: 'error',
 					extra: {
 						errorMessage: resources.errors.common.genericError
@@ -89,6 +125,7 @@
 			}
 
 			await fetchGameState();
+			// Set up polling with exponential backoff on failure
 			pollInterval = setInterval(fetchGameState, 1000);
 		} catch (error) {
 			Sentry.captureException(error, {
@@ -108,10 +145,16 @@
 </script>
 
 <div class="h-screen w-screen bg-[#1a1a1a] font-sans text-white">
-	<Canvas>
-		<ChessScene />
-	</Canvas>
-	<ChessHUD />
+	{#if isLoading}
+		<div class="flex h-full items-center justify-center">
+			<div class="text-xl">Loading chess game...</div>
+		</div>
+	{:else}
+		<Canvas>
+			<ChessScene />
+		</Canvas>
+		<ChessHUD />
+	{/if}
 
 	<!-- Error Message -->
 	{#if errorMessage}

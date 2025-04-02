@@ -45,45 +45,12 @@ export const POST: RequestHandler = async ({ params, request }) => {
 			console.log(`[Start API] Found memory lobby:`, memoryLobby);
 		}
 
+		let lobby;
 		// Start the game in the database
 		try {
 			// Attempt to start the game in the database
-			const lobby = await BackendLobbyService.startGame(params.id, userId, timeControl);
-			
-			try {
-				// Initialize the game state
-				console.log(`[Start API] Initializing game state for lobby ${params.id}`);
-				
-				// First clear any existing game state
-				deleteGameState(params.id);
-				
-				// Create a fresh initial game state with the specified time control
-				const initialState = getInitialState(params.id, timeControl);
-				console.log(`[Start API] Created initial game state with ${initialState.pieces.length} pieces`);
-				
-				// Update the in-memory game state
-				updateGameState(params.id, initialState);
-				
-				// Update the in-memory lobby state
-				updateLobby(params.id, lobby);
-				
-				console.log(`[Start API] Game started successfully for lobby ${params.id}`);
-			} catch (storeError) {
-				console.error(`[Start API] Error initializing game state:`, storeError);
-				Sentry.captureException(storeError, {
-					extra: {
-						errorMessage: 'Failed to initialize game state',
-						lobbyId: params.id
-					}
-				});
-				// We still want to return success as the DB update succeeded
-				// But log the error for debugging
-			}
-			
-			// Add a short delay to ensure state is updated before returning
-			await new Promise(resolve => setTimeout(resolve, 100));
-			
-			return json(lobby);
+			lobby = await BackendLobbyService.startGame(params.id, userId, timeControl);
+			console.log(`[Start API] Game started successfully in DB for lobby ${params.id}`);
 		} catch (dbError) {
 			console.error(`[Start API] Database error:`, dbError);
 			// Return a more detailed error message
@@ -93,6 +60,42 @@ export const POST: RequestHandler = async ({ params, request }) => {
 				
 			return json({ error: errorMessage }, { status: 500 });
 		}
+		
+		// Initialize the game state regardless of DB errors
+		try {
+			// Initialize the game state
+			console.log(`[Start API] Initializing game state for lobby ${params.id}`);
+			
+			// First clear any existing game state
+			deleteGameState(params.id);
+			
+			// Create a fresh initial game state with the specified time control
+			const initialState = getInitialState(params.id, timeControl);
+			console.log(`[Start API] Created initial game state with ${initialState.pieces.length} pieces`);
+			
+			// Update the in-memory game state
+			updateGameState(params.id, initialState);
+			
+			// Update the in-memory lobby state
+			updateLobby(params.id, lobby);
+			
+			console.log(`[Start API] In-memory state initialized for lobby ${params.id}`);
+		} catch (storeError) {
+			console.error(`[Start API] Error initializing game state:`, storeError);
+			Sentry.captureException(storeError, {
+				extra: {
+					errorMessage: 'Failed to initialize game state',
+					lobbyId: params.id
+				}
+			});
+			// We still want to return success as the DB update succeeded
+			// But log the error for debugging
+		}
+		
+		// Add a short delay to ensure state is updated before returning
+		await new Promise(resolve => setTimeout(resolve, 500));
+		
+		return json(lobby);
 	} catch (error) {
 		console.error(`[Start API] Unexpected error:`, error);
 		Sentry.captureException(error, {

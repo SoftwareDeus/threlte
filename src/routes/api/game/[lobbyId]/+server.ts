@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { GameState } from '$lib/types/chess';
 import { ChessColor } from '$lib/types/chess';
-import { getGameState, updateGameState } from '$lib/scripts/serverGameState';
+import { getGameState, updateGameState, getInitialState } from '$lib/scripts/serverGameState';
 import { getLobbies } from '$lib/scripts/lobbyStore';
 import * as Sentry from '@sentry/sveltekit';
 import { resources } from '$lib/resources';

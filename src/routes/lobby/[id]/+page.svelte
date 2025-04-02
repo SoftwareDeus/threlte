@@ -159,6 +159,13 @@
 			const fetchedLobby = await getLobby($lobbyId);
 			lobby = fetchedLobby;
 			error = '';
+			
+			// Automatically redirect to game if lobby status has changed to 'playing'
+			if (fetchedLobby.status === 'playing') {
+				console.log('Lobby status is playing, redirecting to game');
+				await goto(`/game/${fetchedLobby.id}`);
+			}
+			
 			return fetchedLobby;
 		} catch (e: unknown) {
 			if (e instanceof Error && e.message === resources.errors.server.validation.lobbyNotFound) {
