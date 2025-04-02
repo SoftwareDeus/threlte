@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { authStore } from '$lib/stores/authStore';
 	import { lobbyId } from '$lib/stores/lobbyStore';
@@ -23,6 +23,7 @@
 	let increment = 0;
 	let updateTimeout: ReturnType<typeof setTimeout> | null = null;
 	let isHostValue = false;
+	let pollingInterval: ReturnType<typeof setInterval> | null = null;
 
 	$: isHostValue = lobby?.host_id === $authStore.user?.id;
 
@@ -75,6 +76,9 @@
 			}
 
 			await fetchLobby();
+			
+			// Set up polling for lobby updates every 3 seconds
+			pollingInterval = setInterval(fetchLobby, 3000);
 		} catch (e: unknown) {
 			Sentry.captureException(e, {
 				extra: {
@@ -82,6 +86,17 @@
 				}
 			});
 			error = resources.errors.common.fetchFailed;
+		}
+	});
+	
+	onDestroy(() => {
+		// Clean up polling interval when component is destroyed
+		if (pollingInterval) {
+			clearInterval(pollingInterval);
+		}
+		
+		if (updateTimeout) {
+			clearTimeout(updateTimeout);
 		}
 	});
 
